@@ -2,21 +2,19 @@ import { getToken } from '../utils/token';
 import { API_BASE_URL } from '@env';
 
 async function request(endpoint, options = {}) {
-  const token = await getToken();
-
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const useAuth = options.useAuth !== false;
+  const token = useAuth ? await getToken() : null;
+
   const response = await fetch(url, {
+    ...options,
     headers: {
+      accept: 'application/json',
       'Content-Type': 'application/json',
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
-    ...options,
   });
 
   let data = {};

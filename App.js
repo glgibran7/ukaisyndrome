@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
+import { ToastProvider } from './src/context/ToastProvider';
 
 function AppContent() {
   const { mode } = useTheme();
@@ -25,7 +26,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -6,14 +6,13 @@ import {
   StyleSheet,
   Image,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
 import AppButton from '../../components/ui/AppButton';
-import mentors from '../../data/mentors';
-import modules from '../../data/moduls';
-import programs from '../../data/programs';
+import { useUserStore } from '../../store/userStore';
 
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -22,7 +21,12 @@ const MODULE_WIDTH = 160;
 
 export default function HomeScreen() {
   const { colors, spacing, typography } = useTheme();
+  const [refreshing, setRefreshing] = useState(false);
+  const user = useUserStore(state => state.user);
+  const fetchUser = useUserStore(state => state.fetchUser);
 
+  const [mentors, setMentors] = useState([]);
+  const [modules, setModules] = useState([]);
   const mentorScrollRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const moduleScrollRef = useRef(null);
@@ -37,7 +41,52 @@ export default function HomeScreen() {
     year: 'numeric',
   });
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchUser();
+    } catch (error) {
+      console.log('Refresh gagal', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
+    if (!user) {
+      fetchUser().catch(error => {
+        console.log('Fetch user gagal', error);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const mentorResponse = await fetch(
+        'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/mentors.json',
+      );
+
+      const moduleResponse = await fetch(
+        'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/modules.json',
+      );
+
+      const mentorData = await mentorResponse.json();
+      const moduleData = await moduleResponse.json();
+
+      setMentors(mentorData);
+      setModules(moduleData);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (!mentors.length) return;
+
     const itemWidth = MENTOR_WIDTH + spacing.sm;
 
     const interval = setInterval(() => {
@@ -64,9 +113,11 @@ export default function HomeScreen() {
     }, 3200);
 
     return () => clearInterval(interval);
-  }, [activeIndex, mentorDirection, spacing.sm]);
+  }, [activeIndex, mentorDirection, mentors, spacing.sm]);
 
   useEffect(() => {
+    if (!modules.length) return;
+
     const itemWidth = MODULE_WIDTH + spacing.sm;
 
     const interval = setInterval(() => {
@@ -93,147 +144,284 @@ export default function HomeScreen() {
     }, 3200);
 
     return () => clearInterval(interval);
-  }, [activeModuleIndex, moduleDirection, spacing.sm]);
+  }, [activeModuleIndex, moduleDirection, modules, spacing.sm]);
+
+  const activeClass = user?.classes?.[0];
 
   return (
     <AppLayout>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          padding: spacing.md,
-          paddingBottom: spacing.xl,
-        }}
-      >
-        {/* Greeting */}
+      <View style={{ flex: 1 }}>
+        {/* Sticky Greeting */}
         <View
           style={{
-            marginBottom: spacing.lg,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.sm,
+            backgroundColor: colors.background,
+            zIndex: 10,
           }}
         >
-          <View>
-            <Text style={[typography.small, { color: colors.textSecondary }]}>
-              Selamat datang
-            </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.small, { color: colors.textSecondary }]}>
+                Selamat datang
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                style={[
+                  typography.h1,
+                  {
+                    color: colors.text,
+                    marginTop: 4,
+                  },
+                ]}
+              >
+                {user?.name || 'Peserta'}
+              </Text>
+            </View>
 
             <Text
               style={[
-                typography.h1,
+                typography.small,
                 {
-                  color: colors.text,
-                  marginTop: 4,
+                  color: colors.textSecondary,
+                  marginLeft: spacing.sm,
                 },
               ]}
             >
-              Gibran
+              {today}
             </Text>
           </View>
-
-          <Text
-            style={[
-              typography.small,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
-          >
-            {today}
-          </Text>
         </View>
 
-        {/* Mentor */}
-        <View>
-          <Text
-            style={[
-              typography.h3,
-              {
-                color: colors.text,
-                marginBottom: spacing.sm,
-              },
-            ]}
-          >
-            Mentor
-          </Text>
-
-          <ScrollView
-            ref={mentorScrollRef}
-            horizontal
-            pagingEnabled={false}
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={e => {
-              const itemWidth = MENTOR_WIDTH + spacing.sm;
-              const index = Math.round(
-                e.nativeEvent.contentOffset.x / itemWidth,
-              );
-              setActiveIndex(index >= mentors.length ? 0 : index);
-            }}
-          >
-            {mentors.map((mentor, index) => (
+        {/* Scrollable content */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.xl,
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          {/* Info peserta */}
+          {user?.classes?.[0] && (
+            <AppCard
+              style={{
+                marginBottom: spacing.lg,
+                borderWidth: 1,
+                borderColor: `${colors.primary}22`,
+                backgroundColor: colors.card || colors.surface,
+                overflow: 'hidden',
+              }}
+            >
               <View
-                key={index}
                 style={{
+                  position: 'absolute',
+                  top: -18,
+                  right: -18,
+                  width: 72,
+                  height: 72,
+                  borderRadius: 999,
+                  backgroundColor: `${colors.primary}10`,
+                }}
+              />
+
+              <Text
+                style={[
+                  typography.small,
+                  {
+                    color: colors.textSecondary,
+                    marginBottom: 6,
+                  },
+                ]}
+              >
+                Kelas
+              </Text>
+
+              <Text
+                style={[
+                  typography.h3,
+                  {
+                    color: colors.text,
+                    marginBottom: spacing.sm,
+                  },
+                ]}
+              >
+                {user.classes[0].name}
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    backgroundColor: `${colors.primary}14`,
+                  }}
+                >
+                  <Text
+                    style={[
+                      typography.small,
+                      {
+                        color: colors.primary,
+                        fontWeight: '700',
+                      },
+                    ]}
+                  >
+                    {user.classes[0].batch}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      backgroundColor: '#22C55E',
+                      marginRight: 6,
+                    }}
+                  />
+
+                  <Text
+                    style={[
+                      typography.small,
+                      {
+                        color: colors.textSecondary,
+                        fontWeight: '600',
+                      },
+                    ]}
+                  >
+                    Aktif
+                  </Text>
+                </View>
+              </View>
+            </AppCard>
+          )}
+
+          {/* Mentor */}
+          <View>
+            <Text
+              style={[
+                typography.h3,
+                {
+                  color: colors.text,
                   marginBottom: spacing.sm,
-                  width: 160,
-                  marginRight: spacing.sm,
-                }}
-              >
-                <View style={styles.mentorImageWrapper}>
-                  <Image source={mentor.image} style={styles.mentorImage} />
+                },
+              ]}
+            >
+              Daftar Mentor
+            </Text>
+
+            <ScrollView
+              ref={mentorScrollRef}
+              horizontal
+              pagingEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={e => {
+                const itemWidth = MENTOR_WIDTH + spacing.sm;
+                const index = Math.round(
+                  e.nativeEvent.contentOffset.x / itemWidth,
+                );
+                setActiveIndex(index >= mentors.length ? 0 : index);
+              }}
+            >
+              {mentors.map((mentor, index) => (
+                <View
+                  key={index}
+                  style={{
+                    marginBottom: spacing.sm,
+                    width: 160,
+                    marginRight: spacing.sm,
+                  }}
+                >
+                  <View style={styles.mentorImageWrapper}>
+                    <Image
+                      source={{ uri: mentor.image }}
+                      style={styles.mentorImage}
+                    />
+                  </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
+              ))}
+            </ScrollView>
+          </View>
 
-        {/* Modul */}
-        <View style={{ marginBottom: spacing.lg }}>
-          <Text
-            style={[
-              typography.h3,
-              {
-                color: colors.text,
-                marginBottom: spacing.sm,
-              },
-            ]}
-          >
-            Modul Terupdate
-          </Text>
+          {/* Modul */}
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text
+              style={[
+                typography.h3,
+                {
+                  color: colors.text,
+                  marginBottom: spacing.sm,
+                },
+              ]}
+            >
+              Modul Terupdate
+            </Text>
 
-          <ScrollView
-            ref={moduleScrollRef}
-            horizontal
-            pagingEnabled={false}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: spacing.sm }}
-            onMomentumScrollEnd={e => {
-              const itemWidth = MODULE_WIDTH + spacing.sm;
-              const index = Math.round(
-                e.nativeEvent.contentOffset.x / itemWidth,
-              );
+            <ScrollView
+              ref={moduleScrollRef}
+              horizontal
+              pagingEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: spacing.sm }}
+              onMomentumScrollEnd={e => {
+                const itemWidth = MODULE_WIDTH + spacing.sm;
+                const index = Math.round(
+                  e.nativeEvent.contentOffset.x / itemWidth,
+                );
 
-              setActiveModuleIndex(index >= modules.length ? 0 : index);
-            }}
-          >
-            {modules.map((module, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 160,
-                  marginRight: spacing.sm,
-                }}
-              >
-                <View style={styles.moduleImageWrapper}>
-                  <Image source={module.image} style={styles.moduleImage} />
+                setActiveModuleIndex(index >= modules.length ? 0 : index);
+              }}
+            >
+              {modules.map((module, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: 160,
+                    marginRight: spacing.sm,
+                  }}
+                >
+                  <View style={styles.moduleImageWrapper}>
+                    <Image
+                      source={{ uri: module.image }}
+                      style={styles.moduleImage}
+                    />
+                  </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
+              ))}
+            </ScrollView>
+          </View>
 
-        {/* Paket Program */}
-        <View style={{ marginBottom: spacing.sm }}>
+          {/* Paket Program */}
+          {/* <View style={{ marginBottom: spacing.sm }}>
           <Text
             style={[
               typography.h3,
@@ -319,8 +507,9 @@ export default function HomeScreen() {
               </AppCard>
             );
           })}
-        </View>
-      </ScrollView>
+        </View> */}
+        </ScrollView>
+      </View>
     </AppLayout>
   );
 }

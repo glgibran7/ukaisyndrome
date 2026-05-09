@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 
 import AuthNavigator from './AuthNavigator';
@@ -7,24 +7,29 @@ import MainStack from './MainStack';
 import { getToken } from '../utils/token';
 
 export default function RootNavigator() {
-  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const [ready, setReady] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const checkAuth = async () => {
+  const bootstrap = useCallback(async () => {
     const token = await getToken();
-    setIsLoggedIn(!!token);
-  };
 
-  useEffect(() => {
-    checkAuth();
+    setIsLoggedIn(!!token);
+    setReady(true);
   }, []);
 
-  if (isLoggedIn === null) {
-    return null;
-  }
+  useEffect(() => {
+    bootstrap();
+  }, [bootstrap]);
+
+  if (!ready) return null;
 
   return (
-    <NavigationContainer onStateChange={checkAuth}>
-      {isLoggedIn ? <MainStack /> : <AuthNavigator />}
+    <NavigationContainer>
+      {isLoggedIn ? (
+        <MainStack />
+      ) : (
+        <AuthNavigator onLoginSuccess={() => setIsLoggedIn(true)} />
+      )}
     </NavigationContainer>
   );
 }

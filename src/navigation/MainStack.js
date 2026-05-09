@@ -8,6 +8,9 @@ import VideoDetailScreen from '../screens/video/VideoDetailScreen';
 import TryoutQuestionScreen from '../screens/tryout/TryoutQuestionScreen';
 import HasilDetailScreen from '../screens/hasil/HasilDetailScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
+import MateriViewScreen from '../screens/materi/MateriViewScreen';
+import VideoViewScreen from '../screens/video/VideoViewScreen';
+import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,7 +20,9 @@ export default function MainStack() {
       <Stack.Screen name="Tabs" component={AppTabs} />
 
       <Stack.Screen name="MateriDetail" component={MateriDetailScreen} />
+      <Stack.Screen name="MateriViewer" component={MateriViewScreen} />
       <Stack.Screen name="VideoDetail" component={VideoDetailScreen} />
+      <Stack.Screen name="VideoViewer" component={VideoViewScreen} />
       <Stack.Screen name="TryoutQuestion" component={TryoutQuestionScreen} />
       <Stack.Screen name="HasilDetail" component={HasilDetailScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />

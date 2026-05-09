@@ -1,27 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-
-import { getToken } from '../../utils/token';
 import { useTheme } from '../../theme/ThemeProvider';
 
-export default function SplashScreen({ navigation }) {
+export default function SplashScreen() {
   const { colors, typography } = useTheme();
-
-  useEffect(() => {
-    const bootstrap = async () => {
-      const token = await getToken();
-
-      setTimeout(() => {
-        if (token) {
-          navigation.navigate('Tabs');
-        } else {
-          navigation.navigate('Login');
-        }
-      }, 1200);
-    };
-
-    bootstrap();
-  }, [navigation]);
 
   return (
     <View
