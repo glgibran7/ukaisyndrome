@@ -26,6 +26,7 @@ export default function MainStack() {
       <Stack.Screen name="TryoutQuestion" component={TryoutQuestionScreen} />
       <Stack.Screen name="HasilDetail" component={HasilDetailScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
     </Stack.Navigator>
   );
 }

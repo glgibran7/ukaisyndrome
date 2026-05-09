@@ -4,13 +4,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   ActivityIndicator,
   Image,
+  Platform,
 } from 'react-native';
 
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Check, Eye, EyeOff } from 'lucide-react-native';
 
 import { login } from '../../api/auth/auth.api';
@@ -19,7 +18,7 @@ import AppLoader from '../../components/ui/AppLoader';
 import { useToast } from '../../context/ToastProvider';
 import { useUserStore } from '../../store/userStore';
 
-export default function LoginScreen({ navigation, onLoginSuccess }) {
+export default function LoginScreen({ onLoginSuccess }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
   const fetchUser = useUserStore(state => state.fetchUser);
@@ -46,13 +45,10 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         password,
       });
 
-      showToast('Login berhasil', 'success');
-
       await fetchUser();
-      onLoginSuccess?.();
 
-      // Tidak perlu navigation.replace()
-      // RootNavigator akan otomatis pindah ke MainStack
+      showToast('Login berhasil', 'success');
+      onLoginSuccess?.();
     } catch (error) {
       showToast(error?.message || 'Email atau password tidak valid', 'error');
     } finally {
@@ -61,32 +57,35 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
   };
 
   const inputStyle = field => ({
-    borderWidth: 1.5,
-    borderColor: focusedField === field ? colors.primary : colors.border,
-    borderRadius: 16,
+    borderWidth: 1.4,
+    borderColor: focusedField === field ? colors.primary : `${colors.border}CC`,
+    borderRadius: 18,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     color: colors.text,
     backgroundColor: colors.card || colors.background,
     fontSize: 15,
   });
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{
         flex: 1,
         backgroundColor: colors.background,
       }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardOpeningTime={0}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: spacing.lg,
           paddingTop: spacing.xl * 1.2,
-          paddingBottom: spacing.xl,
+          paddingBottom: spacing.xl * 2,
+          justifyContent: 'center',
         }}
       >
         {/* Header */}
@@ -98,13 +97,12 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         >
           <View
             style={{
-              width: 82,
-              height: 82,
-              borderRadius: 24,
+              width: 92,
+              height: 92,
+              borderRadius: 28,
               backgroundColor: colors.card || colors.background,
               justifyContent: 'center',
               alignItems: 'center',
-              marginTop: spacing.lg,
               marginBottom: spacing.md,
               borderWidth: 1,
               borderColor: colors.border,
@@ -113,8 +111,8 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
             <Image
               source={require('../../assets/images/logo.png')}
               style={{
-                width: 52,
-                height: 52,
+                width: 58,
+                height: 58,
                 resizeMode: 'contain',
               }}
             />
@@ -139,7 +137,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                 color: colors.textSecondary,
                 textAlign: 'center',
                 lineHeight: 20,
-                maxWidth: 280,
+                maxWidth: 290,
               },
             ]}
           >
@@ -151,7 +149,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         <View
           style={{
             backgroundColor: colors.card || colors.background,
-            borderRadius: 24,
+            borderRadius: 28,
             padding: spacing.lg,
             borderWidth: 1,
             borderColor: colors.border,
@@ -177,6 +175,8 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
             placeholderTextColor={colors.textSecondary}
             autoCapitalize="none"
             keyboardType="email-address"
+            returnKeyType="next"
+            blurOnSubmit={false}
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField(null)}
             style={[
@@ -212,12 +212,14 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
               placeholder="Masukkan password"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry={secure}
+              returnKeyType="done"
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField(null)}
+              onSubmitEditing={handleLogin}
               style={[
                 inputStyle('password'),
                 {
-                  paddingRight: 48,
+                  paddingRight: 50,
                 },
               ]}
             />
@@ -227,7 +229,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
               style={{
                 position: 'absolute',
                 right: 14,
-                top: 14,
+                top: 15,
               }}
             >
               {secure ? (
@@ -238,60 +240,53 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
             </TouchableOpacity>
           </View>
 
-          {/* Remember Me UI only */}
-          <View
+          {/* Remember me */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setRememberMe(prev => !prev)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               marginBottom: spacing.lg,
             }}
           >
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setRememberMe(prev => !prev)}
+            <View
               style={{
-                flexDirection: 'row',
+                width: 20,
+                height: 20,
+                borderRadius: 6,
+                borderWidth: 1.5,
+                borderColor: rememberMe ? colors.primary : colors.border,
+                backgroundColor: rememberMe ? colors.primary : 'transparent',
                 alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
               }}
             >
-              <View
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 6,
-                  borderWidth: 1.5,
-                  borderColor: rememberMe ? colors.primary : colors.border,
-                  backgroundColor: rememberMe ? colors.primary : 'transparent',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 10,
-                }}
-              >
-                {rememberMe && <Check size={13} color="#fff" strokeWidth={3} />}
-              </View>
+              {rememberMe && <Check size={13} color="#fff" strokeWidth={3} />}
+            </View>
 
-              <Text
-                style={[
-                  typography.small,
-                  {
-                    color: colors.textSecondary,
-                  },
-                ]}
-              >
-                Ingat saya
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <Text
+              style={[
+                typography.small,
+                {
+                  color: colors.textSecondary,
+                },
+              ]}
+            >
+              Ingat saya
+            </Text>
+          </TouchableOpacity>
 
-          {/* Login Button */}
+          {/* Button */}
           <TouchableOpacity
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.9}
             style={{
               backgroundColor: colors.primary,
-              paddingVertical: 15,
-              borderRadius: 16,
+              paddingVertical: 16,
+              borderRadius: 18,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: loading ? 0.75 : 1,
@@ -315,7 +310,6 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
           </TouchableOpacity>
         </View>
 
-        {/* Footer */}
         <Text
           style={[
             typography.small,
@@ -328,9 +322,9 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         >
           Belajar lebih terarah bersama mentor terbaik.
         </Text>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <AppLoader visible={loading} />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
