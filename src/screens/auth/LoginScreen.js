@@ -17,10 +17,12 @@ import { login } from '../../api/auth/auth.api';
 import { useTheme } from '../../theme/ThemeProvider';
 import AppLoader from '../../components/ui/AppLoader';
 import { useToast } from '../../context/ToastProvider';
+import { useUserStore } from '../../store/userStore';
 
 export default function LoginScreen({ navigation, onLoginSuccess }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
+  const fetchUser = useUserStore(state => state.fetchUser);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,6 +48,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
 
       showToast('Login berhasil', 'success');
 
+      await fetchUser();
       onLoginSuccess?.();
 
       // Tidak perlu navigation.replace()
