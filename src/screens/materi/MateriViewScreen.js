@@ -71,7 +71,20 @@ export default function MateriViewerScreen({ route, navigation }) {
               },
             ]}
           >
-            {title}
+            <Text
+              style={[
+                typography.body,
+                {
+                  color: colors.text,
+                  fontWeight: '600',
+                  lineHeight: 20,
+                },
+              ]}
+            >
+              {title
+                ?.toLowerCase()
+                .replace(/\b\w/g, char => char.toUpperCase())}
+            </Text>
           </Text>
 
           <TouchableOpacity

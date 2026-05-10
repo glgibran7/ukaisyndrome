@@ -127,7 +127,20 @@ export default function MateriDetailScreen({ route, navigation }) {
                 },
               ]}
             >
-              {item.title}
+              <Text
+                style={[
+                  typography.body,
+                  {
+                    color: colors.text,
+                    fontWeight: '600',
+                    lineHeight: 20,
+                  },
+                ]}
+              >
+                {item.title
+                  ?.toLowerCase()
+                  .replace(/\b\w/g, char => char.toUpperCase())}
+              </Text>
             </Text>
           </View>
 

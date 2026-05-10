@@ -11,6 +11,7 @@ import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import MateriViewScreen from '../screens/materi/MateriViewScreen';
 import VideoViewScreen from '../screens/video/VideoViewScreen';
 import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
+import PrivateViewScreen from '../screens/private/PrivateViewerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +28,7 @@ export default function MainStack() {
       <Stack.Screen name="HasilDetail" component={HasilDetailScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <Stack.Screen name="PrivateViewer" component={PrivateViewScreen} />
     </Stack.Navigator>
   );
 }

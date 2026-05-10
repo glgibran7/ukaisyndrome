@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 
 import { ChevronLeft, House } from 'lucide-react-native';
 
@@ -8,9 +8,11 @@ import AppCard from '../../components/ui/AppCard';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { changePassword } from '../../api/user/user.api';
+import { useToast } from '../../context/ToastProvider';
 
 export default function ChangePasswordScreen({ navigation }) {
   const { colors, spacing, typography } = useTheme();
+  const { showToast } = useToast();
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -19,12 +21,12 @@ export default function ChangePasswordScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Semua field wajib diisi');
+      showToast('Semua field wajib diisi', 'error');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Password baru tidak sama');
+      showToast('Password baru tidak sama', 'error');
       return;
     }
 
@@ -36,15 +38,20 @@ export default function ChangePasswordScreen({ navigation }) {
         new_password: newPassword,
       });
 
-      Alert.alert('Sukses', 'Password berhasil diubah');
+      showToast('Password berhasil diubah', 'success');
 
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
 
-      navigation.goBack();
+      setTimeout(() => {
+        navigation.goBack();
+      }, 400);
     } catch (err) {
-      Alert.alert('Gagal', 'Password lama salah atau server error');
+      showToast(
+        err?.message || 'Password lama salah atau server error',
+        'error',
+      );
     } finally {
       setLoading(false);
     }
@@ -59,7 +66,7 @@ export default function ChangePasswordScreen({ navigation }) {
           paddingHorizontal: spacing.md,
         }}
       >
-        {/* HEADER (CONSISTENT WITH MATERI DETAIL STYLE) */}
+        {/* HEADER */}
         <View
           style={{
             marginBottom: spacing.md,

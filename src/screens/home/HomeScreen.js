@@ -5,20 +5,196 @@ import {
   ScrollView,
   StyleSheet,
   Image,
-  Dimensions,
+  Animated,
+  TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 
 import AppLayout from '../../components/AppLayout';
-import AppCard from '../../components/ui/AppCard';
-import AppButton from '../../components/ui/AppButton';
 import { useUserStore } from '../../store/userStore';
-
 import { useTheme } from '../../theme/ThemeProvider';
 
-const MENTOR_WIDTH = 160;
-const MODULE_WIDTH = 160;
+const MENTOR_CARD_WIDTH = 140;
+const MODULE_CARD_WIDTH = 140;
 
+// ─── Skeleton shimmer block ───────────────────────────────────────────────────
+function SkeletonBox({ width, height, radius = 10, style }) {
+  const opacity = useRef(new Animated.Value(0.35)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.35,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius: radius,
+          backgroundColor: '#E2E8F0',
+          opacity,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+// ─── Section header ────────────────────────────────────────────────────────────
+function SectionHeader({ title, subtitle, colors, typography, spacing }) {
+  return (
+    <View
+      style={{
+        marginBottom: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+      }}
+    >
+      <View>
+        <Text
+          style={[typography.h3, { color: colors.text, letterSpacing: -0.3 }]}
+        >
+          {title}
+        </Text>
+        {subtitle && (
+          <Text
+            style={[
+              typography.small,
+              { color: colors.textSecondary, marginTop: 2 },
+            ]}
+          >
+            {subtitle}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Mentor card ──────────────────────────────────────────────────────────────
+function MentorCard({ mentor, spacing }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () =>
+    Animated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      speed: 30,
+    }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+    }).start();
+
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+    >
+      <Animated.View
+        style={[
+          styles.mentorCard,
+          { transform: [{ scale }], marginRight: spacing.sm },
+        ]}
+      >
+        <Image source={{ uri: mentor.image }} style={styles.mentorImage} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Module card ──────────────────────────────────────────────────────────────
+function ModuleCard({ module, spacing }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () =>
+    Animated.spring(scale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 30,
+    }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+    }).start();
+
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+    >
+      <Animated.View
+        style={[
+          styles.moduleCard,
+          { transform: [{ scale }], marginRight: spacing.sm },
+        ]}
+      >
+        <Image source={{ uri: module.image }} style={styles.moduleImage} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Quick stat pill ──────────────────────────────────────────────────────────
+function StatPill({ icon, label, value, colors, typography }) {
+  return (
+    <View
+      style={[
+        styles.statPill,
+        {
+          backgroundColor: `${colors.primary}0D`,
+          borderColor: `${colors.primary}1A`,
+        },
+      ]}
+    >
+      <Text style={{ fontSize: 18 }}>{icon}</Text>
+      <View style={{ marginLeft: 8 }}>
+        <Text
+          style={[
+            typography.small,
+            { color: colors.textSecondary, fontSize: 10 },
+          ]}
+        >
+          {label}
+        </Text>
+        <Text
+          style={[
+            typography.small,
+            { color: colors.text, fontWeight: '800', fontSize: 13 },
+          ]}
+        >
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const { colors, spacing, typography } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
@@ -27,187 +203,201 @@ export default function HomeScreen() {
 
   const [mentors, setMentors] = useState([]);
   const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const mentorScrollRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
   const moduleScrollRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [mentorDirection, setMentorDirection] = useState(1);
   const [moduleDirection, setModuleDirection] = useState(1);
 
-  const today = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  // Fade-in for entire page
+  const pageOpacity = useRef(new Animated.Value(0)).current;
+  const pageTranslateY = useRef(new Animated.Value(16)).current;
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
       await fetchUser();
-    } catch (error) {
-      console.log('Refresh gagal', error);
+    } catch (e) {
+      console.log('Refresh gagal', e);
     } finally {
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (!user) {
-      fetchUser().catch(error => {
-        console.log('Fetch user gagal', error);
-      });
-    }
-  }, []);
-
-  useEffect(() => {
+    if (!user) fetchUser().catch(console.log);
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const mentorResponse = await fetch(
-        'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/mentors.json',
-      );
-
-      const moduleResponse = await fetch(
-        'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/modules.json',
-      );
-
-      const mentorData = await mentorResponse.json();
-      const moduleData = await moduleResponse.json();
-
-      setMentors(mentorData);
-      setModules(moduleData);
-    } catch (error) {
-      console.log(error);
+      const [mRes, modRes] = await Promise.all([
+        fetch(
+          'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/mentors.json',
+        ),
+        fetch(
+          'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/modules.json',
+        ),
+      ]);
+      setMentors(await mRes.json());
+      setModules(await modRes.json());
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+      Animated.parallel([
+        Animated.timing(pageOpacity, {
+          toValue: 1,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pageTranslateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   };
 
+  // Auto-scroll mentor
   useEffect(() => {
     if (!mentors.length) return;
-
-    const itemWidth = MENTOR_WIDTH + spacing.sm;
-
+    const itemWidth = MENTOR_CARD_WIDTH + spacing.sm;
     const interval = setInterval(() => {
-      let nextIndex = activeIndex + mentorDirection;
-      let nextDirection = mentorDirection;
-
-      if (nextIndex >= mentors.length - 1) {
-        nextIndex = mentors.length - 1;
-        nextDirection = -1;
+      let next = activeIndex + mentorDirection;
+      let dir = mentorDirection;
+      if (next >= mentors.length - 1) {
+        next = mentors.length - 1;
+        dir = -1;
       }
-
-      if (nextIndex <= 0) {
-        nextIndex = 0;
-        nextDirection = 1;
+      if (next <= 0) {
+        next = 0;
+        dir = 1;
       }
-
       mentorScrollRef.current?.scrollTo({
-        x: nextIndex * itemWidth,
+        x: next * itemWidth,
         animated: true,
       });
-
-      setActiveIndex(nextIndex);
-      setMentorDirection(nextDirection);
+      setActiveIndex(next);
+      setMentorDirection(dir);
     }, 3200);
-
     return () => clearInterval(interval);
   }, [activeIndex, mentorDirection, mentors, spacing.sm]);
 
+  // Auto-scroll module
   useEffect(() => {
     if (!modules.length) return;
-
-    const itemWidth = MODULE_WIDTH + spacing.sm;
-
+    const itemWidth = MODULE_CARD_WIDTH + spacing.sm;
     const interval = setInterval(() => {
-      let nextIndex = activeModuleIndex + moduleDirection;
-      let nextDirection = moduleDirection;
-
-      if (nextIndex >= modules.length - 1) {
-        nextIndex = modules.length - 1;
-        nextDirection = -1;
+      let next = activeModuleIndex + moduleDirection;
+      let dir = moduleDirection;
+      if (next >= modules.length - 1) {
+        next = modules.length - 1;
+        dir = -1;
       }
-
-      if (nextIndex <= 0) {
-        nextIndex = 0;
-        nextDirection = 1;
+      if (next <= 0) {
+        next = 0;
+        dir = 1;
       }
-
       moduleScrollRef.current?.scrollTo({
-        x: nextIndex * itemWidth,
+        x: next * itemWidth,
         animated: true,
       });
-
-      setActiveModuleIndex(nextIndex);
-      setModuleDirection(nextDirection);
+      setActiveModuleIndex(next);
+      setModuleDirection(dir);
     }, 3200);
-
     return () => clearInterval(interval);
   }, [activeModuleIndex, moduleDirection, modules, spacing.sm]);
 
-  const activeClass = user?.classes?.[0];
+  const greetingHour = new Date().getHours();
+  const greeting =
+    greetingHour < 11
+      ? 'Selamat Pagi'
+      : greetingHour < 15
+      ? 'Selamat Siang'
+      : greetingHour < 18
+      ? 'Selamat Sore'
+      : 'Selamat Malam';
 
   return (
     <AppLayout>
-      <View style={{ flex: 1 }}>
-        {/* Sticky Greeting */}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        {/* ── Sticky Header ── */}
         <View
-          style={{
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.sm,
-            backgroundColor: colors.background,
-            zIndex: 10,
-          }}
+          style={[
+            styles.stickyHeader,
+            {
+              paddingHorizontal: spacing.md,
+              backgroundColor: colors.background,
+            },
+          ]}
         >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.small, { color: colors.textSecondary }]}>
-                Selamat datang
-              </Text>
-
-              <Text
-                numberOfLines={1}
-                style={[
-                  typography.h1,
-                  {
-                    color: colors.text,
-                    marginTop: 4,
-                  },
-                ]}
-              >
-                {user?.name || 'Peserta'}
-              </Text>
-            </View>
-
+          <View style={{ flex: 1 }}>
             <Text
               style={[
                 typography.small,
+                { color: colors.textSecondary, fontSize: 12 },
+              ]}
+            >
+              {greeting} 👋
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={[
+                typography.h1,
                 {
-                  color: colors.textSecondary,
-                  marginLeft: spacing.sm,
+                  color: colors.text,
+                  marginTop: 2,
+                  letterSpacing: -0.5,
+                  fontSize: 24,
                 },
               ]}
             >
-              {today}
+              {user?.name
+                ?.toLowerCase()
+                .replace(/\b\w/g, c => c.toUpperCase()) || 'Pengguna'}
+            </Text>
+          </View>
+
+          {/* Date pill */}
+          <View
+            style={[
+              styles.datePill,
+              {
+                backgroundColor: `${colors.primary}12`,
+                borderColor: `${colors.primary}20`,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                typography.small,
+                { color: colors.primary, fontSize: 10, fontWeight: '700' },
+              ]}
+            >
+              {new Date().toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+              })}
             </Text>
           </View>
         </View>
 
-        {/* Scrollable content */}
-        <ScrollView
+        {/* ── Scrollable Body ── */}
+        <Animated.ScrollView
+          style={{
+            opacity: pageOpacity,
+            transform: [{ translateY: pageTranslateY }],
+          }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             paddingHorizontal: spacing.md,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.xl,
+            paddingTop: spacing.sm,
+            paddingBottom: spacing.xl + 24,
           }}
           refreshControl={
             <RefreshControl
@@ -218,333 +408,358 @@ export default function HomeScreen() {
             />
           }
         >
-          {/* Info peserta */}
+          {/* ── Class Card ── */}
           {user?.classes?.[0] && (
-            <AppCard
-              style={{
-                marginBottom: spacing.lg,
-                borderWidth: 1,
-                borderColor: `${colors.primary}22`,
-                backgroundColor: colors.card || colors.surface,
-                overflow: 'hidden',
-              }}
+            <View
+              style={[
+                styles.classCard,
+                { backgroundColor: colors.primary, marginBottom: spacing.lg },
+              ]}
             >
+              {/* Decorative circles */}
               <View
-                style={{
-                  position: 'absolute',
-                  top: -18,
-                  right: -18,
-                  width: 72,
-                  height: 72,
-                  borderRadius: 999,
-                  backgroundColor: `${colors.primary}10`,
-                }}
+                style={[
+                  styles.decCircle,
+                  {
+                    width: 120,
+                    height: 120,
+                    top: -40,
+                    right: -30,
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.decCircle,
+                  {
+                    width: 80,
+                    height: 80,
+                    bottom: -20,
+                    right: 60,
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                  },
+                ]}
               />
 
-              <Text
-                style={[
-                  typography.small,
-                  {
-                    color: colors.textSecondary,
-                    marginBottom: 6,
-                  },
-                ]}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                }}
               >
-                Kelas
-              </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.classLabel}>Kelas Aktif</Text>
+                  <Text style={styles.className} numberOfLines={2}>
+                    {user.classes[0].name
+                      ?.toLowerCase()
+                      .replace(/\b\w/g, c => c.toUpperCase())}
+                  </Text>
+                </View>
 
-              <Text
-                style={[
-                  typography.h3,
-                  {
-                    color: colors.text,
-                    marginBottom: spacing.sm,
-                  },
-                ]}
-              >
-                {user.classes[0].name}
-              </Text>
+                {/* Active badge */}
+                <View style={styles.activeBadge}>
+                  <View style={styles.activeDot} />
+                  <Text style={styles.activeText}>Aktif</Text>
+                </View>
+              </View>
 
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  marginTop: 14,
                 }}
               >
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 999,
-                    backgroundColor: `${colors.primary}14`,
-                  }}
-                >
-                  <Text
-                    style={[
-                      typography.small,
-                      {
-                        color: colors.primary,
-                        fontWeight: '700',
-                      },
-                    ]}
-                  >
-                    {user.classes[0].batch}
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 999,
-                      backgroundColor: '#22C55E',
-                      marginRight: 6,
-                    }}
-                  />
-
-                  <Text
-                    style={[
-                      typography.small,
-                      {
-                        color: colors.textSecondary,
-                        fontWeight: '600',
-                      },
-                    ]}
-                  >
-                    Aktif
+                <View style={styles.batchChip}>
+                  <Text style={styles.batchText}>
+                    {user.classes[0].batch
+                      ?.toLowerCase()
+                      .replace(/\b\w/g, c => c.toUpperCase())}
                   </Text>
                 </View>
               </View>
-            </AppCard>
+            </View>
           )}
 
-          {/* Mentor */}
-          <View>
-            <Text
-              style={[
-                typography.h3,
-                {
-                  color: colors.text,
-                  marginBottom: spacing.sm,
-                },
-              ]}
-            >
-              Daftar Mentor
-            </Text>
+          {/* ── Quick Stats Row ── */}
+          {/* <View style={[styles.statsRow, { marginBottom: spacing.lg }]}>
+            <StatPill
+              icon="📚"
+              label="Modul"
+              value={modules.length || '—'}
+              colors={colors}
+              typography={typography}
+            />
+            <StatPill
+              icon="🎓"
+              label="Mentor"
+              value={mentors.length || '—'}
+              colors={colors}
+              typography={typography}
+            />
+            <StatPill
+              icon="🏆"
+              label="Skor"
+              value="92"
+              colors={colors}
+              typography={typography}
+            />
+          </View> */}
 
-            <ScrollView
-              ref={mentorScrollRef}
-              horizontal
-              pagingEnabled={false}
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={e => {
-                const itemWidth = MENTOR_WIDTH + spacing.sm;
-                const index = Math.round(
-                  e.nativeEvent.contentOffset.x / itemWidth,
-                );
-                setActiveIndex(index >= mentors.length ? 0 : index);
-              }}
-            >
-              {mentors.map((mentor, index) => (
-                <View
-                  key={index}
-                  style={{
-                    marginBottom: spacing.sm,
-                    width: 160,
-                    marginRight: spacing.sm,
-                  }}
-                >
-                  <View style={styles.mentorImageWrapper}>
-                    <Image
-                      source={{ uri: mentor.image }}
-                      style={styles.mentorImage}
-                    />
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Modul */}
+          {/* ── Mentors ── */}
           <View style={{ marginBottom: spacing.lg }}>
-            <Text
-              style={[
-                typography.h3,
-                {
-                  color: colors.text,
-                  marginBottom: spacing.sm,
-                },
-              ]}
-            >
-              Modul Terupdate
-            </Text>
+            <SectionHeader
+              title="Daftar Mentor"
+              subtitle="Belajar langsung dari ahlinya"
+              colors={colors}
+              typography={typography}
+              spacing={spacing}
+            />
 
-            <ScrollView
-              ref={moduleScrollRef}
-              horizontal
-              pagingEnabled={false}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: spacing.sm }}
-              onMomentumScrollEnd={e => {
-                const itemWidth = MODULE_WIDTH + spacing.sm;
-                const index = Math.round(
-                  e.nativeEvent.contentOffset.x / itemWidth,
-                );
-
-                setActiveModuleIndex(index >= modules.length ? 0 : index);
-              }}
-            >
-              {modules.map((module, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: 160,
-                    marginRight: spacing.sm,
-                  }}
-                >
-                  <View style={styles.moduleImageWrapper}>
-                    <Image
-                      source={{ uri: module.image }}
-                      style={styles.moduleImage}
+            {loading ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {[1, 2, 3].map(i => (
+                  <View key={i} style={{ marginRight: spacing.sm }}>
+                    <SkeletonBox
+                      width={MENTOR_CARD_WIDTH}
+                      height={MENTOR_CARD_WIDTH * 1.25}
+                      radius={14}
+                    />
+                    <SkeletonBox
+                      width={MENTOR_CARD_WIDTH * 0.7}
+                      height={12}
+                      radius={6}
+                      style={{ marginTop: 8 }}
+                    />
+                    <SkeletonBox
+                      width={MENTOR_CARD_WIDTH * 0.5}
+                      height={10}
+                      radius={6}
+                      style={{ marginTop: 6 }}
                     />
                   </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Paket Program */}
-          {/* <View style={{ marginBottom: spacing.sm }}>
-          <Text
-            style={[
-              typography.h3,
-              {
-                color: colors.text,
-                marginBottom: spacing.sm,
-              },
-            ]}
-          >
-            Paket Program
-          </Text>
-
-          {programs.map((program, index) => {
-            const highlighted = index === 1;
-
-            return (
-              <AppCard
-                key={program.title}
-                style={{
-                  marginBottom: spacing.sm,
-                  borderWidth: highlighted ? 2 : 1,
-                  borderColor: highlighted ? colors.primary : colors.border,
+                ))}
+              </ScrollView>
+            ) : (
+              <ScrollView
+                ref={mentorScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                decelerationRate="fast"
+                snapToInterval={MENTOR_CARD_WIDTH + spacing.sm}
+                snapToAlignment="start"
+                onMomentumScrollEnd={e => {
+                  const i = Math.round(
+                    e.nativeEvent.contentOffset.x /
+                      (MENTOR_CARD_WIDTH + spacing.sm),
+                  );
+                  setActiveIndex(i >= mentors.length ? 0 : i);
                 }}
               >
-                <Text
-                  style={[
-                    typography.h3,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
-                >
-                  {program.title}
-                </Text>
+                {mentors.map((mentor, i) => (
+                  <MentorCard key={i} mentor={mentor} spacing={spacing} />
+                ))}
+              </ScrollView>
+            )}
+          </View>
 
-                <Text
-                  style={[
-                    typography.small,
-                    {
-                      color: colors.primary,
+          {/* ── Modules ── */}
+          <View style={{ marginBottom: spacing.xl }}>
+            <SectionHeader
+              title="Modul Terupdate"
+              subtitle="Konten terbaru untuk kamu"
+              colors={colors}
+              typography={typography}
+              spacing={spacing}
+            />
 
-                      fontWeight: '600',
-                    },
-                  ]}
-                >
-                  {program.highlight}
-                </Text>
-
-                <Text
-                  style={[
-                    typography.small,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
-                >
-                  {program.desc}
-                </Text>
-
-                <View
-                  style={{
-                    marginTop: spacing.sm,
-                    alignSelf: 'flex-start',
-                    paddingHorizontal: 10,
-                    borderRadius: 999,
-                    backgroundColor: highlighted
-                      ? colors.primary
-                      : colors.border,
-                  }}
-                >
-                  <Text
-                    style={[
-                      typography.small,
-                      {
-                        color: highlighted ? '#fff' : colors.text,
-                        fontWeight: '600',
-                      },
-                    ]}
-                  >
-                    {highlighted ? 'Rekomendasi' : 'Tersedia'}
-                  </Text>
-                </View>
-              </AppCard>
-            );
-          })}
-        </View> */}
-        </ScrollView>
+            {loading ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {[1, 2].map(i => (
+                  <View key={i} style={{ marginRight: spacing.sm }}>
+                    <SkeletonBox
+                      width={MODULE_CARD_WIDTH}
+                      height={MODULE_CARD_WIDTH * 0.6}
+                      radius={14}
+                    />
+                    <SkeletonBox
+                      width={MODULE_CARD_WIDTH * 0.8}
+                      height={12}
+                      radius={6}
+                      style={{ marginTop: 8 }}
+                    />
+                    <SkeletonBox
+                      width={MODULE_CARD_WIDTH * 0.5}
+                      height={10}
+                      radius={6}
+                      style={{ marginTop: 6 }}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <ScrollView
+                ref={moduleScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                decelerationRate="fast"
+                snapToInterval={MODULE_CARD_WIDTH + spacing.sm}
+                snapToAlignment="start"
+                onMomentumScrollEnd={e => {
+                  const i = Math.round(
+                    e.nativeEvent.contentOffset.x /
+                      (MODULE_CARD_WIDTH + spacing.sm),
+                  );
+                  setActiveModuleIndex(i >= modules.length ? 0 : i);
+                }}
+              >
+                {modules.map((module, i) => (
+                  <ModuleCard key={i} module={module} spacing={spacing} />
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </Animated.ScrollView>
       </View>
     </AppLayout>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  stickyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 12,
+    zIndex: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  datePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginLeft: 12,
+  },
+  classCard: {
+    borderRadius: 20,
+    padding: 20,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  classLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  className: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    lineHeight: 26,
+  },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4ADE80',
+    marginRight: 5,
+  },
+  activeText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  batchChip: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  batchText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  decCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  mentorCard: {
+    width: MENTOR_CARD_WIDTH,
+    height: MENTOR_CARD_WIDTH * 1.35,
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
   mentorImage: {
     width: '100%',
-    height: MENTOR_WIDTH * 1.25,
+    height: '100%',
     resizeMode: 'cover',
   },
-
+  moduleCard: {
+    width: MODULE_CARD_WIDTH,
+    height: MODULE_CARD_WIDTH * 1.35,
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
   moduleImage: {
     width: '100%',
-    height: MODULE_WIDTH * 1.25,
+    height: '100%',
     resizeMode: 'cover',
   },
-
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 12,
+    gap: 4,
   },
-
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    marginHorizontal: 4,
-  },
-
-  moduleImageWrapper: {
-    overflow: 'hidden',
-  },
-
-  mentorImageWrapper: {
-    overflow: 'hidden',
+    height: 6,
+    borderRadius: 3,
   },
 });

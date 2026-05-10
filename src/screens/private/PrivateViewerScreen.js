@@ -8,9 +8,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useUserStore } from '../../store/userStore';
 
 function transformGoogleDriveUrl(url) {
-  if (!url) {
-    return '';
-  }
+  if (!url) return '';
 
   if (url.includes('/preview')) {
     return url;
@@ -25,14 +23,16 @@ function transformGoogleDriveUrl(url) {
   return url;
 }
 
-export default function VideoViewerScreen({ route, navigation }) {
+export default function PrivateViewerScreen({ route, navigation }) {
   const { title, url } = route.params;
+
   const { colors, spacing, typography } = useTheme();
   const user = useUserStore(state => state.user);
-  const name = user?.name || 'Peserta';
-  const watermarks = Array.from({ length: 48 }); // jumlah teks
 
+  const name = user?.name || 'Peserta';
   const previewUrl = transformGoogleDriveUrl(url);
+
+  const watermarks = Array.from({ length: 48 });
 
   return (
     <AppLayout>
@@ -158,7 +158,7 @@ export default function VideoViewerScreen({ route, navigation }) {
             domStorageEnabled
           />
 
-          {/* Overlay tutup tombol popout Google Drive */}
+          {/* Overlay kanan atas */}
           <View
             pointerEvents="auto"
             style={{

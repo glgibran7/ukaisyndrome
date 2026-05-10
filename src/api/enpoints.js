@@ -9,6 +9,7 @@ const endpoints = {
   tryout: '/tryout',
   hasil: '/hasil',
   profile: '/profile',
+  privateMaterials: '/materi/peserta/private',
 };
 
 export default endpoints;

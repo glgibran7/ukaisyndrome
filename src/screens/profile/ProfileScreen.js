@@ -2,11 +2,34 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useUserStore } from '../../store/userStore';
-import { User, Mail, Layers, Shield, LogOut } from 'lucide-react-native';
+import { Mail, Layers, Shield, LogOut } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
 import { useNavigation } from '@react-navigation/native';
+
+/* =========================
+   AVATAR HELPERS
+========================= */
+
+const stringToColor = (str = '') => {
+  let hash = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return `hsl(${hash % 360}, 70%, 55%)`;
+};
+
+const getInitials = (name = '') => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+};
 
 export default function ProfileScreen() {
   const { colors, spacing, typography } = useTheme();
@@ -25,7 +48,7 @@ export default function ProfileScreen() {
           padding: spacing.md,
         }}
       >
-        {/* HEADER PROFILE (CONSISTENT CARD STYLE) */}
+        {/* HEADER PROFILE */}
         <AppCard
           style={{
             alignItems: 'center',
@@ -33,20 +56,41 @@ export default function ProfileScreen() {
             marginBottom: spacing.md,
           }}
         >
+          {/* AVATAR PREMIUM */}
           <View
             style={{
               width: 72,
               height: 72,
               borderRadius: 999,
-              backgroundColor: `${colors.primary}15`,
               alignItems: 'center',
               justifyContent: 'center',
+              backgroundColor: stringToColor(user?.name),
+
+              // shadow iOS
+              shadowColor: '#000',
+              shadowOpacity: 0.15,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 6 },
+
+              // shadow Android
+              elevation: 6,
+
               marginBottom: spacing.sm,
             }}
           >
-            <User size={28} color={colors.primary} />
+            <Text
+              style={{
+                fontSize: 26,
+                fontWeight: '800',
+                color: '#fff',
+                letterSpacing: 1,
+              }}
+            >
+              {getInitials(user?.name)}
+            </Text>
           </View>
 
+          {/* NAME */}
           <Text
             style={[
               typography.h2,
@@ -59,6 +103,7 @@ export default function ProfileScreen() {
             {user?.name || 'Peserta'}
           </Text>
 
+          {/* ROLE */}
           <Text
             style={[
               typography.small,
@@ -100,11 +145,15 @@ export default function ProfileScreen() {
               </Text>
 
               <Text style={[typography.body, { color: colors.text }]}>
-                {activeClass?.name || '-'}
+                {activeClass?.name
+                  ?.toLowerCase()
+                  .replace(/\b\w/g, c => c.toUpperCase()) || '-'}
               </Text>
 
               <Text style={[typography.small, { color: colors.textSecondary }]}>
-                {activeClass?.batch || '-'}
+                {activeClass?.batch
+                  ?.toLowerCase()
+                  .replace(/\b\w/g, c => c.toUpperCase()) || '-'}
               </Text>
             </View>
           </View>
@@ -135,6 +184,7 @@ export default function ProfileScreen() {
           </View>
         </AppCard>
 
+        {/* CHANGE PASSWORD */}
         <AppCard style={{ marginBottom: spacing.sm }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('ChangePassword')}
@@ -149,7 +199,8 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
         </AppCard>
-        {/* LOGOUT BUTTON (CONSISTENT STYLE WITH APP BUTTON FEEL) */}
+
+        {/* LOGOUT */}
         <TouchableOpacity
           onPress={async () => {
             await logout();

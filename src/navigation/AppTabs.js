@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform, View, Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { enableScreens } from 'react-native-screens';
 
 import {
   House,
@@ -22,54 +23,62 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import PrivateScreen from '../screens/private/PrivateScreen';
 
 import { useTheme } from '../theme/ThemeProvider';
+import { useUserStore } from '../store/userStore';
+
+enableScreens(true); // 🔥 performance boost
 
 const Tab = createBottomTabNavigator();
 
-function getTabIcon(routeName, color, size) {
-  switch (routeName) {
-    case 'Home':
-      return <House size={size} color={color} />;
-    case 'Materi':
-      return <BookOpen size={size} color={color} />;
-    case 'Video':
-      return <PlayCircle size={size} color={color} />;
-    case 'Private':
-      return <Lock size={size} color={color} />;
-    case 'Tryout':
-      return <FileText size={size} color={color} />;
-    case 'Hasil':
-      return <BarChart3 size={size} color={color} />;
-    case 'Profil':
-      return <User size={size} color={color} />;
-    default:
-      return <House size={size} color={color} />;
-  }
+/* ================= ICON MAP (anti re-render) ================= */
+const iconMap = {
+  Home: House,
+  Materi: BookOpen,
+  Video: PlayCircle,
+  Private: Lock,
+  Tryout: FileText,
+  Hasil: BarChart3,
+  Profil: User,
+};
+
+function TabIcon({ routeName, color, size }) {
+  const Icon = iconMap[routeName] || House;
+  return <Icon size={size} color={color} />;
 }
 
+/* ================= MAIN ================= */
 export default function AppTabs() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const user = useUserStore(state => state.user);
 
-  const bottomPadding =
-    Platform.OS === 'ios'
-      ? Math.max(insets.bottom, 6)
-      : Math.max(insets.bottom, 6);
+  const bottomPadding = Math.max(insets.bottom, 6);
+
+  /* ================= CONDITIONAL TAB ================= */
+  const showPrivateTab = useMemo(() => {
+    return user?.mentorships !== null && user?.mentorships !== undefined;
+  }, [user]);
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
 
+        lazy: true, // 🔥 load saat dibuka
+        detachInactiveScreens: true, // 🔥 hemat memory
+        tabBarHideOnKeyboard: true,
+
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
 
         tabBarStyle: {
+          position: 'absolute',
           backgroundColor: colors.surface,
+          borderTopWidth: 0.5,
           borderTopColor: colors.border,
-          borderTopWidth: 1,
           height: 56 + bottomPadding,
-          paddingTop: 6,
           paddingBottom: bottomPadding,
+          paddingTop: 6,
+          elevation: 0,
         },
 
         tabBarLabelStyle: {
@@ -77,92 +86,37 @@ export default function AppTabs() {
           fontWeight: '600',
         },
 
-        tabBarIcon: ({ color, size }) =>
-          getTabIcon(route.name, color, size ?? 20),
+        tabBarIcon: ({ color, size }) => (
+          <TabIcon routeName={route.name} color={color} size={size ?? 20} />
+        ),
       })}
     >
+      {/* ================= TABS ================= */}
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Materi" component={MateriScreen} />
       <Tab.Screen name="Video" component={VideoScreen} />
 
-      <Tab.Screen
-        name="Private"
-        component={PrivateScreen}
-        options={{
-          tabBarLabel: ({ color }) => (
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: '600',
-                color,
-                marginTop: 2,
-              }}
-            >
-              Private
-            </Text>
-          ),
-
-          tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                width: 34,
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-              }}
-            >
-              {/* glow tipis */}
-              {focused && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    width: 28,
-                    height: 28,
-                    borderRadius: 999,
-                    backgroundColor: 'rgba(250, 204, 21, 0.14)',
-                  }}
-                />
-              )}
-
-              <Lock
-                size={20}
-                color={focused ? '#D4A017' : colors.textSecondary}
-              />
-
-              {/* badge PRO atas kanan */}
-              <View
+      {/* ================= PRIVATE (CONDITIONAL) ================= */}
+      {showPrivateTab && (
+        <Tab.Screen
+          name="Private"
+          component={PrivateScreen}
+          options={{
+            tabBarLabel: ({ color }) => (
+              <Text
                 style={{
-                  position: 'absolute',
-                  top: -7,
-                  right: -8,
-                  paddingHorizontal: 4,
-                  paddingVertical: 1,
-                  borderRadius: 999,
-                  backgroundColor: focused ? '#D4A017' : '#B88917',
-
-                  shadowColor: '#FACC15',
-                  shadowOpacity: focused ? 0.35 : 0.15,
-                  shadowRadius: focused ? 5 : 2,
-                  shadowOffset: { width: 0, height: 0 },
-                  elevation: focused ? 4 : 1,
-                  zIndex: 2,
+                  fontSize: 11,
+                  fontWeight: '600',
+                  color,
+                  marginTop: 2,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 7,
-                    fontWeight: '800',
-                    color: '#fff',
-                    letterSpacing: 0.3,
-                  }}
-                >
-                  PRO
-                </Text>
-              </View>
-            </View>
-          ),
-        }}
-      />
+                Private
+              </Text>
+            ),
+          }}
+        />
+      )}
 
       <Tab.Screen name="Tryout" component={TryoutScreen} />
       <Tab.Screen name="Hasil" component={HasilScreen} />
