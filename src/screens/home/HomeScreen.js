@@ -570,7 +570,7 @@ export default function HomeScreen() {
           <View style={{ marginBottom: spacing.xl }}>
             <SectionHeader
               title="Modul Terupdate"
-              subtitle="Konten terbaru untuk kamu"
+              subtitle="Menggunakan modul terbaru untuk anda"
               colors={colors}
               typography={typography}
               spacing={spacing}

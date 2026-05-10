@@ -41,6 +41,18 @@ export default function ProfileScreen() {
 
   const user = useUserStore(state => state.user);
   const logout = useUserStore(state => state.logout);
+  const [logoutVisible, setLogoutVisible] = React.useState(false);
+  const [logoutLoading, setLogoutLoading] = React.useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setLogoutLoading(true);
+      await logout();
+    } finally {
+      setLogoutLoading(false);
+      setLogoutVisible(false);
+    }
+  };
 
   const activeClass = user?.classes?.[0];
 
@@ -217,9 +229,7 @@ export default function ProfileScreen() {
 
         {/* ================= LOGOUT ================= */}
         <TouchableOpacity
-          onPress={async () => {
-            await logout();
-          }}
+          onPress={() => setLogoutVisible(true)}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -235,6 +245,131 @@ export default function ProfileScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      {logoutVisible && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: 'flex-end',
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            padding: spacing.md,
+          }}
+        >
+          {/* tap outside */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+              if (!logoutLoading) {
+                setLogoutVisible(false);
+              }
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+
+          <View
+            style={{
+              borderRadius: 24,
+              overflow: 'hidden',
+            }}
+          >
+            {/* main card */}
+            <View
+              style={{
+                backgroundColor: colors.card || colors.background,
+                borderRadius: 20,
+                paddingTop: spacing.lg,
+                paddingBottom: spacing.md,
+                paddingHorizontal: spacing.md,
+                marginBottom: spacing.sm,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 17,
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                Logout
+              </Text>
+
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  textAlign: 'center',
+                  marginBottom: spacing.lg,
+                }}
+              >
+                Apakah kamu yakin ingin keluar dari akun ini?
+              </Text>
+
+              <TouchableOpacity
+                disabled={logoutLoading}
+                onPress={handleLogout}
+                activeOpacity={0.85}
+                style={{
+                  backgroundColor: '#EF4444',
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: logoutLoading ? 0.8 : 1,
+                }}
+              >
+                {logoutLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text
+                    style={{
+                      color: '#fff',
+                      fontSize: 15,
+                      fontWeight: '700',
+                    }}
+                  >
+                    Logout
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* cancel button */}
+            <TouchableOpacity
+              disabled={logoutLoading}
+              onPress={() => setLogoutVisible(false)}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: colors.card || colors.background,
+                paddingVertical: 15,
+                borderRadius: 18,
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.primary,
+                  fontSize: 16,
+                  fontWeight: '700',
+                }}
+              >
+                Batal
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </AppLayout>
   );
 }

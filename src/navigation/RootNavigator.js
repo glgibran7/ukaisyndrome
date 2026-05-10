@@ -6,25 +6,26 @@ import MainStack from './MainStack';
 import SplashScreen from '../screens/splash/SplashScreen';
 
 import { getToken } from '../utils/token';
+import { useUserStore } from '../store/userStore';
 
 export default function RootNavigator() {
   const [ready, setReady] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const user = useUserStore(state => state.user);
 
   useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        await getToken();
+      } finally {
+        setTimeout(() => {
+          setReady(true);
+        }, 900);
+      }
+    };
+
     bootstrap();
   }, []);
-
-  const bootstrap = async () => {
-    try {
-      const token = await getToken();
-      setIsLoggedIn(!!token);
-    } finally {
-      setTimeout(() => {
-        setReady(true);
-      }, 900);
-    }
-  };
 
   if (!ready) {
     return <SplashScreen />;
@@ -32,11 +33,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {isLoggedIn ? (
-        <MainStack />
-      ) : (
-        <AuthNavigator onLoginSuccess={() => setIsLoggedIn(true)} />
-      )}
+      {user ? <MainStack /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }

@@ -1,14 +1,7 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  Image,
-  Platform,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Check, Eye, EyeOff } from 'lucide-react-native';
 
@@ -18,6 +11,66 @@ import AppLoader from '../../components/ui/AppLoader';
 import { useToast } from '../../context/ToastProvider';
 import { useUserStore } from '../../store/userStore';
 
+const REMEMBER_ME_KEY = 'ukai-remember-email';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function getErrorMessage(error) {
+  const msg = (error?.message || '').toLowerCase();
+  const status = error?.status || error?.statusCode || 0;
+
+  // Jaringan
+  if (
+    msg.includes('network') ||
+    msg.includes('timeout') ||
+    msg.includes('connection') ||
+    msg.includes('fetch')
+  ) {
+    return 'Tidak ada koneksi internet, periksa jaringanmu';
+  }
+
+  // Server error
+  if (status >= 500) {
+    return 'Server sedang bermasalah, coba lagi nanti';
+  }
+
+  // Kredensial salah (401 atau pesan umum dari server)
+  if (
+    status === 401 ||
+    msg.includes('invalid credentials') ||
+    msg.includes('wrong password') ||
+    msg.includes('incorrect') ||
+    msg.includes('unauthorized') ||
+    msg.includes('password salah') ||
+    msg.includes('tidak valid') ||
+    msg.includes('not found') ||
+    msg.includes('tidak ditemukan') ||
+    msg.includes('invalid') ||
+    msg.includes('wrong')
+  ) {
+    return 'Email atau password yang kamu masukkan salah';
+  }
+
+  // Akun dinonaktifkan
+  if (
+    msg.includes('disabled') ||
+    msg.includes('blocked') ||
+    msg.includes('banned') ||
+    msg.includes('inactive') ||
+    msg.includes('nonaktif')
+  ) {
+    return 'Akunmu dinonaktifkan, silakan hubungi admin';
+  }
+
+  // Token tidak ditemukan (dari auth.api.js)
+  if (msg.includes('token tidak ditemukan')) {
+    return 'Login gagal, coba beberapa saat lagi';
+  }
+
+  // Fallback
+  return 'Login gagal, periksa email dan password kamu';
+}
+
 export default function LoginScreen({ onLoginSuccess }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
@@ -25,15 +78,44 @@ export default function LoginScreen({ onLoginSuccess }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [secure, setSecure] = useState(true);
   const [focusedField, setFocusedField] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
 
+  // Load saved email saat pertama mount
+  useEffect(() => {
+    const loadSavedEmail = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem(REMEMBER_ME_KEY);
+        if (savedEmail) {
+          setEmail(savedEmail);
+          setRememberMe(true);
+        }
+      } catch (err) {
+        console.log('Gagal load saved email:', err);
+      }
+    };
+
+    loadSavedEmail();
+  }, []);
+
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      showToast('Email dan password wajib diisi');
+    // Validasi sisi client — per field agar pesan spesifik
+    if (!email.trim() && !password.trim()) {
+      showToast('Email dan password tidak boleh kosong');
+      return;
+    }
+    if (!email.trim()) {
+      showToast('Email tidak boleh kosong');
+      return;
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      showToast('Format email tidak valid, contoh: nama@email.com');
+      return;
+    }
+    if (!password.trim()) {
+      showToast('Password tidak boleh kosong');
       return;
     }
 
@@ -45,14 +127,33 @@ export default function LoginScreen({ onLoginSuccess }) {
         password,
       });
 
+      if (rememberMe) {
+        await AsyncStorage.setItem(REMEMBER_ME_KEY, email.trim());
+      } else {
+        await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+      }
+
       await fetchUser();
 
       showToast('Login berhasil', 'success');
       onLoginSuccess?.();
     } catch (error) {
-      showToast(error?.message || 'Email atau password tidak valid', 'error');
+      showToast(getErrorMessage(error), 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleRememberMe = async () => {
+    const next = !rememberMe;
+    setRememberMe(next);
+
+    if (!next) {
+      try {
+        await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+      } catch (err) {
+        console.log('Gagal hapus saved email:', err);
+      }
     }
   };
 
@@ -68,12 +169,7 @@ export default function LoginScreen({ onLoginSuccess }) {
   });
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={24}
@@ -89,12 +185,7 @@ export default function LoginScreen({ onLoginSuccess }) {
         }}
       >
         {/* Header */}
-        <View
-          style={{
-            alignItems: 'center',
-            marginBottom: spacing.xl,
-          }}
-        >
+        <View style={{ alignItems: 'center', marginBottom: spacing.xl }}>
           <View
             style={{
               width: 92,
@@ -110,22 +201,12 @@ export default function LoginScreen({ onLoginSuccess }) {
           >
             <Image
               source={require('../../assets/images/logo.png')}
-              style={{
-                width: 58,
-                height: 58,
-                resizeMode: 'contain',
-              }}
+              style={{ width: 58, height: 58, resizeMode: 'contain' }}
             />
           </View>
 
           <Text
-            style={[
-              typography.h1,
-              {
-                color: colors.text,
-                marginBottom: 6,
-              },
-            ]}
+            style={[typography.h1, { color: colors.text, marginBottom: 6 }]}
           >
             Selamat Datang
           </Text>
@@ -141,7 +222,7 @@ export default function LoginScreen({ onLoginSuccess }) {
               },
             ]}
           >
-            Masuk ke akunmu untuk melanjutkan belajar bersama UKAI.
+            Masuk ke akunmu untuk melanjutkan belajar bersama Ukai Syndrome.
           </Text>
         </View>
 
@@ -159,10 +240,7 @@ export default function LoginScreen({ onLoginSuccess }) {
           <Text
             style={[
               typography.small,
-              {
-                color: colors.textSecondary,
-                marginBottom: 8,
-              },
+              { color: colors.textSecondary, marginBottom: 8 },
             ]}
           >
             Email
@@ -179,33 +257,20 @@ export default function LoginScreen({ onLoginSuccess }) {
             blurOnSubmit={false}
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField(null)}
-            style={[
-              inputStyle('email'),
-              {
-                marginBottom: spacing.md,
-              },
-            ]}
+            style={[inputStyle('email'), { marginBottom: spacing.md }]}
           />
 
           {/* Password */}
           <Text
             style={[
               typography.small,
-              {
-                color: colors.textSecondary,
-                marginBottom: 8,
-              },
+              { color: colors.textSecondary, marginBottom: 8 },
             ]}
           >
             Password
           </Text>
 
-          <View
-            style={{
-              position: 'relative',
-              marginBottom: spacing.md,
-            }}
-          >
+          <View style={{ position: 'relative', marginBottom: spacing.md }}>
             <TextInput
               value={password}
               onChangeText={setPassword}
@@ -216,21 +281,12 @@ export default function LoginScreen({ onLoginSuccess }) {
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField(null)}
               onSubmitEditing={handleLogin}
-              style={[
-                inputStyle('password'),
-                {
-                  paddingRight: 50,
-                },
-              ]}
+              style={[inputStyle('password'), { paddingRight: 50 }]}
             />
 
             <TouchableOpacity
               onPress={() => setSecure(prev => !prev)}
-              style={{
-                position: 'absolute',
-                right: 14,
-                top: 15,
-              }}
+              style={{ position: 'absolute', right: 14, top: 15 }}
             >
               {secure ? (
                 <EyeOff size={20} color={colors.textSecondary} />
@@ -243,7 +299,7 @@ export default function LoginScreen({ onLoginSuccess }) {
           {/* Remember me */}
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => setRememberMe(prev => !prev)}
+            onPress={handleToggleRememberMe}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -266,14 +322,7 @@ export default function LoginScreen({ onLoginSuccess }) {
               {rememberMe && <Check size={13} color="#fff" strokeWidth={3} />}
             </View>
 
-            <Text
-              style={[
-                typography.small,
-                {
-                  color: colors.textSecondary,
-                },
-              ]}
-            >
+            <Text style={[typography.small, { color: colors.textSecondary }]}>
               Ingat saya
             </Text>
           </TouchableOpacity>
@@ -292,21 +341,11 @@ export default function LoginScreen({ onLoginSuccess }) {
               opacity: loading ? 0.75 : 1,
             }}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text
-                style={[
-                  typography.body,
-                  {
-                    color: '#fff',
-                    fontWeight: '700',
-                  },
-                ]}
-              >
-                Masuk
-              </Text>
-            )}
+            <Text
+              style={[typography.body, { color: '#fff', fontWeight: '700' }]}
+            >
+              Masuk
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -320,7 +359,7 @@ export default function LoginScreen({ onLoginSuccess }) {
             },
           ]}
         >
-          Belajar lebih terarah bersama mentor terbaik.
+          Belum punya akun ? Silahkan hubungi admin
         </Text>
       </KeyboardAwareScrollView>
 
