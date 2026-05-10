@@ -2,7 +2,14 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useUserStore } from '../../store/userStore';
-import { Mail, Layers, Shield, LogOut } from 'lucide-react-native';
+import {
+  Mail,
+  Layers,
+  Shield,
+  LogOut,
+  KeyRound,
+  ChevronRight,
+} from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
@@ -14,22 +21,19 @@ import { useNavigation } from '@react-navigation/native';
 
 const stringToColor = (str = '') => {
   let hash = 0;
-
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-
   return `hsl(${hash % 360}, 70%, 55%)`;
 };
 
-const getInitials = (name = '') => {
-  return name
+const getInitials = (name = '') =>
+  name
     .split(' ')
     .map(n => n[0])
     .slice(0, 2)
     .join('')
     .toUpperCase();
-};
 
 export default function ProfileScreen() {
   const { colors, spacing, typography } = useTheme();
@@ -40,15 +44,34 @@ export default function ProfileScreen() {
 
   const activeClass = user?.classes?.[0];
 
+  const Row = ({ icon, label, value }) => (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+      }}
+    >
+      {icon}
+
+      <View style={{ marginLeft: spacing.sm, flex: 1 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+          {label}
+        </Text>
+        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <AppLayout>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          padding: spacing.md,
-        }}
+        contentContainerStyle={{ padding: spacing.md }}
       >
-        {/* HEADER PROFILE */}
+        {/* ================= HEADER PROFILE ================= */}
         <AppCard
           style={{
             alignItems: 'center',
@@ -56,7 +79,6 @@ export default function ProfileScreen() {
             marginBottom: spacing.md,
           }}
         >
-          {/* AVATAR PREMIUM */}
           <View
             style={{
               width: 72,
@@ -65,142 +87,135 @@ export default function ProfileScreen() {
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: stringToColor(user?.name),
-
-              // shadow iOS
-              shadowColor: '#000',
-              shadowOpacity: 0.15,
-              shadowRadius: 10,
-              shadowOffset: { width: 0, height: 6 },
-
-              // shadow Android
-              elevation: 6,
-
               marginBottom: spacing.sm,
+              elevation: 6,
             }}
           >
-            <Text
-              style={{
-                fontSize: 26,
-                fontWeight: '800',
-                color: '#fff',
-                letterSpacing: 1,
-              }}
-            >
+            <Text style={{ fontSize: 26, fontWeight: '800', color: '#fff' }}>
               {getInitials(user?.name)}
             </Text>
           </View>
 
-          {/* NAME */}
-          <Text
-            style={[
-              typography.h2,
-              {
-                color: colors.text,
-                textAlign: 'center',
-              },
-            ]}
-          >
+          <Text style={[typography.h2, { color: colors.text }]}>
             {user?.name || 'Peserta'}
           </Text>
 
-          {/* ROLE */}
           <Text
-            style={[
-              typography.small,
-              {
-                color: colors.textSecondary,
-                marginTop: 4,
-                textTransform: 'capitalize',
-              },
-            ]}
+            style={{
+              color: colors.textSecondary,
+              marginTop: 4,
+              textTransform: 'capitalize',
+            }}
           >
             {user?.role || '-'}
           </Text>
         </AppCard>
 
-        {/* EMAIL */}
-        <AppCard style={{ marginBottom: spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Mail size={18} color={colors.primary} />
+        <Text
+          style={[
+            typography.body,
+            {
+              color: colors.text,
+              fontWeight: '700',
+              marginBottom: spacing.sm,
+              marginLeft: 2,
+            },
+          ]}
+        >
+          Informasi Pribadi
+        </Text>
 
-            <View style={{ marginLeft: spacing.sm }}>
-              <Text style={[typography.small, { color: colors.textSecondary }]}>
-                Email
-              </Text>
-              <Text style={[typography.body, { color: colors.text }]}>
-                {user?.email || '-'}
-              </Text>
-            </View>
-          </View>
+        {/* ================= INFO SECTION (NO STACKED CARDS) ================= */}
+        <AppCard style={{ marginBottom: spacing.md }}>
+          <Row
+            icon={<Mail size={18} color={colors.primary} />}
+            label="Email"
+            value={user?.email || '-'}
+          />
+
+          <View
+            style={{
+              height: 1,
+              backgroundColor: 'rgba(255,255,255,0.05)',
+            }}
+          />
+
+          <Row
+            icon={<Layers size={18} color={colors.primary} />}
+            label="Kelas"
+            value={
+              activeClass?.name?.replace(/\b\w/g, c => c.toUpperCase()) || '-'
+            }
+          />
+
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontSize: 12,
+              marginLeft: 30,
+              marginTop: -6,
+              marginBottom: 8,
+            }}
+          >
+            {activeClass?.batch?.replace(/\b\w/g, c => c.toUpperCase()) || '-'}
+          </Text>
+
+          <View
+            style={{
+              height: 1,
+              backgroundColor: 'rgba(255,255,255,0.05)',
+            }}
+          />
+
+          <Row
+            icon={<Shield size={18} color={colors.primary} />}
+            label="Role"
+            value={user?.role?.replace(/\b\w/g, c => c.toUpperCase()) || '-'}
+          />
         </AppCard>
 
-        {/* CLASS */}
-        <AppCard style={{ marginBottom: spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Layers size={18} color={colors.primary} />
+        <Text
+          style={[
+            typography.body,
+            {
+              color: colors.text,
+              fontWeight: '700',
+              marginBottom: spacing.sm,
+              marginLeft: 2,
+            },
+          ]}
+        >
+          Pengaturan
+        </Text>
 
-            <View style={{ marginLeft: spacing.sm }}>
-              <Text style={[typography.small, { color: colors.textSecondary }]}>
-                Kelas
-              </Text>
-
-              <Text style={[typography.body, { color: colors.text }]}>
-                {activeClass?.name
-                  ?.toLowerCase()
-                  .replace(/\b\w/g, c => c.toUpperCase()) || '-'}
-              </Text>
-
-              <Text style={[typography.small, { color: colors.textSecondary }]}>
-                {activeClass?.batch
-                  ?.toLowerCase()
-                  .replace(/\b\w/g, c => c.toUpperCase()) || '-'}
-              </Text>
-            </View>
-          </View>
-        </AppCard>
-
-        {/* ROLE */}
-        <AppCard style={{ marginBottom: spacing.lg }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Shield size={18} color={colors.primary} />
-
-            <View style={{ marginLeft: spacing.sm }}>
-              <Text style={[typography.small, { color: colors.textSecondary }]}>
-                Role
-              </Text>
-
-              <Text
-                style={[
-                  typography.body,
-                  {
-                    color: colors.text,
-                    textTransform: 'capitalize',
-                  },
-                ]}
-              >
-                {user?.role || '-'}
-              </Text>
-            </View>
-          </View>
-        </AppCard>
-
-        {/* CHANGE PASSWORD */}
-        <AppCard style={{ marginBottom: spacing.sm }}>
+        {/* ================= ACTION SECTION ================= */}
+        <AppCard style={{ marginBottom: spacing.md }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('ChangePassword')}
             style={{
               flexDirection: 'row',
-              justifyContent: 'center',
               alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
-            <Text style={{ color: colors.primary, fontWeight: '700' }}>
-              Ganti Password
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <KeyRound size={18} color={colors.primary} />
+              <Text
+                style={{
+                  marginLeft: spacing.sm,
+                  color: colors.text,
+                  fontWeight: '600',
+                }}
+              >
+                Ganti Password
+              </Text>
+            </View>
+
+            <ChevronRight size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </AppCard>
 
-        {/* LOGOUT */}
+        {/* ================= LOGOUT ================= */}
         <TouchableOpacity
           onPress={async () => {
             await logout();
@@ -215,14 +230,7 @@ export default function ProfileScreen() {
           }}
         >
           <LogOut size={18} color="#fff" />
-
-          <Text
-            style={{
-              color: '#fff',
-              fontWeight: '700',
-              marginLeft: 8,
-            }}
-          >
+          <Text style={{ color: '#fff', fontWeight: '700', marginLeft: 8 }}>
             Logout
           </Text>
         </TouchableOpacity>

@@ -382,6 +382,7 @@ export default function HomeScreen() {
               {new Date().toLocaleDateString('id-ID', {
                 day: 'numeric',
                 month: 'short',
+                year: 'numeric',
               })}
             </Text>
           </View>
