@@ -15,8 +15,8 @@ import AppLayout from '../../components/AppLayout';
 import { useUserStore } from '../../store/userStore';
 import { useTheme } from '../../theme/ThemeProvider';
 
-const MENTOR_CARD_WIDTH = 140;
-const MODULE_CARD_WIDTH = 140;
+const MENTOR_CARD_WIDTH = 128;
+const MODULE_CARD_WIDTH = 128;
 
 // ─── Skeleton shimmer block ───────────────────────────────────────────────────
 function SkeletonBox({ width, height, radius = 10, style }) {
@@ -633,8 +633,8 @@ const styles = StyleSheet.create({
   stickyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
     zIndex: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.06)',

@@ -24,7 +24,7 @@ function Particle({ delay, color }) {
   const dx = useRef((Math.random() - 0.5) * 60).current;
   const startX = useRef(Math.random() * SW).current;
   const startY = useRef(Math.random() * SH).current;
-  const duration = useRef(3000 + Math.random() * 4000).current;
+  const duration = useRef(8000 + Math.random() * 4000).current;
 
   useEffect(() => {
     const loop = Animated.loop(

@@ -1,15 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
-import { View, Text, Platform } from 'react-native';
-
+import {
+  View,
+  Text,
+  Platform,
+  Animated,
+  StyleSheet,
+  Pressable,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
-
 import {
   House,
   BookOpen,
-  PlayCircle,
   FileText,
   BarChart3,
   User,
@@ -18,9 +21,7 @@ import {
 
 import HomeScreen from '../screens/home/HomeScreen';
 import MateriScreen from '../screens/materi/MateriScreen';
-import VideoScreen from '../screens/video/VideoScreen';
 import TryoutScreen from '../screens/tryout/TryoutScreen';
-import HasilScreen from '../screens/hasil/HasilScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PrivateScreen from '../screens/private/PrivateScreen';
 
@@ -31,178 +32,284 @@ enableScreens(true);
 
 const Tab = createBottomTabNavigator();
 
-/* ================= ICON MAP ================= */
-
+/* ─────────────────────────────────────────────
+   ICON MAP
+───────────────────────────────────────────── */
 const iconMap = {
   Home: House,
   Materi: BookOpen,
-  Video: PlayCircle,
   Private: Sparkles,
   Tryout: FileText,
   Hasil: BarChart3,
   Profil: User,
 };
 
-/* ================= TAB ICON ================= */
+/* ─────────────────────────────────────────────
+   SINGLE TAB BUTTON
+───────────────────────────────────────────── */
+function TabButton({
+  icon: Icon,
+  label,
+  focused,
+  color,
+  onPress,
+  onLongPress,
+  isPro,
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  // Single animated value 0→1 drives everything: pill opacity + icon translate
+  const progress = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
-function TabIcon({ routeName, color, size }) {
-  const Icon = iconMap[routeName] || House;
+  useEffect(() => {
+    Animated.spring(progress, {
+      toValue: focused ? 1 : 0,
+      useNativeDriver: true,
+      damping: 16,
+      stiffness: 200,
+    }).start();
+  }, [focused]);
 
-  /* ================= PRIVATE + PRO BADGE ================= */
-  if (routeName === 'Private') {
-    return (
-      <View
-        style={{
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {/* ICON NORMAL */}
-        <Icon size={size ?? 20} color={color} />
+  const pillOpacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
 
-        {/* BADGE */}
-        <View
-          style={{
-            position: 'absolute',
+  const pillScale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.72, 1],
+  });
 
-            top: -6,
-            right: -18,
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.88,
+      useNativeDriver: true,
+      damping: 10,
+      stiffness: 300,
+    }).start();
+  };
 
-            backgroundColor: '#F59E0B',
-
-            paddingHorizontal: 5,
-            paddingVertical: 1,
-
-            borderRadius: 999,
-
-            borderWidth: 1.5,
-            borderColor: '#fff',
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 8,
-              fontWeight: '900',
-              color: '#fff',
-              letterSpacing: 0.3,
-            }}
-          >
-            PRO
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  return <Icon size={size ?? 20} color={color} />;
-}
-
-/* ================= MAIN ================= */
-
-export default function AppTabs() {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-
-  const user = useUserStore(state => state.user);
-
-  const bottomPadding = Math.max(insets.bottom, 6);
-
-  /* ================= CONDITIONAL PRIVATE ================= */
-
-  const showPrivateTab = useMemo(() => {
-    return user?.mentorships !== null && user?.mentorships !== undefined;
-  }, [user]);
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      damping: 14,
+      stiffness: 200,
+    }).start();
+  };
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.tabButton}
+      android_ripple={null}
+    >
+      {/* Icon wrapper — pill lives here, never touches label */}
+      <View style={styles.iconWrapper}>
+        {/* Pill background — fixed size, only opacity+scale animated */}
+        <Animated.View
+          style={[
+            styles.pill,
+            {
+              backgroundColor: `${color}18`,
+              opacity: pillOpacity,
+              transform: [{ scaleX: pillScale }],
+            },
+          ]}
+        />
 
-        lazy: true,
-        detachInactiveScreens: true,
-        tabBarHideOnKeyboard: true,
+        {/* Icon + PRO badge */}
+        <Animated.View
+          style={{
+            transform: [{ scale }],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon size={20} color={color} strokeWidth={focused ? 2.25 : 1.9} />
+          {isPro && (
+            <View style={styles.proBadge}>
+              <Text style={styles.proBadgeText}>PRO</Text>
+            </View>
+          )}
+        </Animated.View>
+      </View>
 
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+      {/* Label — sits outside iconWrapper, never overlaps pill */}
+      <Text
+        style={[
+          styles.tabLabel,
+          {
+            color,
+            fontWeight: focused ? '700' : '500',
+            opacity: focused ? 1 : 0.6,
+          },
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
-        tabBarStyle: {
-          position: 'absolute',
+/* ─────────────────────────────────────────────
+   CUSTOM TAB BAR
+───────────────────────────────────────────── */
+function CustomTabBar({ state, descriptors, navigation }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 8);
 
+  return (
+    <View
+      style={[
+        styles.barWrapper,
+        {
           backgroundColor: colors.surface,
-
-          borderTopWidth: 0.5,
           borderTopColor: colors.border,
-
-          height: 56 + bottomPadding,
-
           paddingBottom: bottomPadding,
-          paddingTop: 6,
-
-          elevation: 0,
-
           ...Platform.select({
             ios: {
               shadowColor: '#000',
-              shadowOpacity: 0.05,
-              shadowRadius: 10,
-              shadowOffset: {
-                width: 0,
-                height: -2,
-              },
+              shadowOpacity: 0.08,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: -4 },
             },
-
             android: {
-              elevation: 8,
+              elevation: 12,
             },
           }),
         },
-
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
-
-        tabBarIcon: ({ color, size }) => (
-          <TabIcon routeName={route.name} color={color} size={size} />
-        ),
-      })}
+      ]}
     >
-      {/* ================= TABS ================= */}
+      {state.routes.map((route, index) => {
+        const focused = state.index === index;
+        const Icon = iconMap[route.name] || House;
+        const isPro = route.name === 'Private';
 
+        const color = focused ? colors.primary : colors.textSecondary;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+          if (!focused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({ type: 'tabLongPress', target: route.key });
+        };
+
+        return (
+          <TabButton
+            key={route.key}
+            icon={Icon}
+            label={route.name}
+            focused={focused}
+            color={color}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            isPro={isPro}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   MAIN NAVIGATOR
+───────────────────────────────────────────── */
+export default function AppTabs() {
+  const user = useUserStore(state => state.user);
+
+  const showPrivateTab = useMemo(() => user?.mentorships != null, [user]);
+
+  return (
+    <Tab.Navigator
+      tabBar={props => <CustomTabBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+        lazy: true,
+        detachInactiveScreens: true,
+        tabBarHideOnKeyboard: true,
+      }}
+    >
       <Tab.Screen name="Home" component={HomeScreen} />
-
       <Tab.Screen name="Materi" component={MateriScreen} />
-
-      <Tab.Screen name="Video" component={VideoScreen} />
-
-      {/* ================= PRIVATE ================= */}
-
       {showPrivateTab && (
-        <Tab.Screen
-          name="Private"
-          component={PrivateScreen}
-          options={{
-            tabBarLabel: ({ color }) => (
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: '600',
-                  color,
-                  marginTop: 2,
-                }}
-              >
-                Private
-              </Text>
-            ),
-          }}
-        />
+        <Tab.Screen name="Private" component={PrivateScreen} />
       )}
-
       <Tab.Screen name="Tryout" component={TryoutScreen} />
-
-      <Tab.Screen name="Hasil" component={HasilScreen} />
-
       <Tab.Screen name="Profil" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
+
+/* ─────────────────────────────────────────────
+   STYLES
+───────────────────────────────────────────── */
+const styles = StyleSheet.create({
+  barWrapper: {
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    minHeight: 54,
+  },
+
+  iconWrapper: {
+    width: 54,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+
+  tabLabel: {
+    fontSize: 11,
+    letterSpacing: 0.15,
+  },
+  pill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 999,
+  },
+
+  proBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -16,
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  proBadgeText: {
+    fontSize: 7,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+});

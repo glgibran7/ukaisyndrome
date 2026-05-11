@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import { FileText, ChevronRight, Search } from 'lucide-react-native';
+import { FileText, ChevronRight, Search, Trophy } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
@@ -17,40 +17,55 @@ import AppCard from '../../components/ui/AppCard';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useToast } from '../../context/ToastProvider';
 
-// nanti ganti ke API beneran
-// import { getTryoutPeserta } from '../../api/tryout/tryout.api';
+// nanti ganti API asli
+// import { getTryoutPeserta, getTryoutResults } from '../../api/tryout/tryout.api';
+
+const tabs = [
+  { key: 'tryout', label: 'Tryout' },
+  { key: 'result', label: 'Hasil' },
+];
 
 export default function TryoutScreen({ navigation }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [tryouts, setTryouts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [tab, setTab] = useState('tryout');
   const [search, setSearch] = useState('');
 
+  const [tryouts, setTryouts] = useState([]);
+  const [results, setResults] = useState([]);
+
   useEffect(() => {
-    loadTryouts();
+    loadData();
   }, []);
 
-  const loadTryouts = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
 
-      // ===== DUMMY DATA (sementara) =====
-      const data = [
+      // dummy data
+      const tryoutData = [
         { id: 1, title: 'Tryout UKAI Batch 1' },
         { id: 2, title: 'Simulasi OSCE Level 1' },
         { id: 3, title: 'Tryout Farmakologi Dasar' },
       ];
 
-      setTryouts(data);
+      const resultData = [
+        { id: 101, title: 'Tryout UKAI Batch 1', score: 82 },
+        { id: 102, title: 'Simulasi OSCE Level 1', score: 76 },
+      ];
 
-      // kalau sudah API:
-      // const data = await getTryoutPeserta();
-      // setTryouts(data || []);
+      setTryouts(tryoutData);
+      setResults(resultData);
+
+      // nanti kalau API
+      // const tryoutData = await getTryoutPeserta();
+      // const resultData = await getTryoutResults();
     } catch (error) {
-      showToast(error?.message || 'Gagal memuat tryout');
+      showToast(error?.message || 'Gagal memuat data tryout');
     } finally {
       setLoading(false);
     }
@@ -59,86 +74,136 @@ export default function TryoutScreen({ navigation }) {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await loadTryouts();
-    } catch (error) {
-      showToast(error?.message || 'Gagal refresh');
+      await loadData();
     } finally {
       setRefreshing(false);
     }
   };
 
-  const filteredTryouts = useMemo(() => {
+  const activeData = useMemo(() => {
+    const source = tab === 'tryout' ? tryouts : results;
     const keyword = search.trim().toLowerCase();
 
-    if (!keyword) return tryouts;
+    if (!keyword) return source;
 
-    return tryouts.filter(item => item.title?.toLowerCase().includes(keyword));
-  }, [tryouts, search]);
+    return source.filter(item => item.title?.toLowerCase().includes(keyword));
+  }, [tab, tryouts, results, search]);
 
-  const openTryout = item => {
-    // nanti arahkan ke detail tryout
-    navigation.navigate('TryoutDetail', {
-      tryoutId: item.id,
+  const handleOpen = item => {
+    if (tab === 'tryout') {
+      navigation.navigate('TryoutDetail', {
+        tryoutId: item.id,
+        title: item.title,
+      });
+      return;
+    }
+
+    navigation.navigate('TryoutResultDetail', {
+      resultId: item.id,
       title: item.title,
     });
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity activeOpacity={0.85} onPress={() => openTryout(item)}>
-      <AppCard
+  const renderTab = item => {
+    const active = tab === item.key;
+
+    return (
+      <TouchableOpacity
+        key={item.key}
+        activeOpacity={0.85}
+        onPress={() => setTab(item.key)}
         style={{
-          marginBottom: spacing.sm,
-          borderWidth: 1,
-          borderColor: colors.border,
+          flex: 1,
+          paddingVertical: 10,
+          borderRadius: 14,
+          alignItems: 'center',
+          backgroundColor: active ? colors.primary : 'transparent',
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text
+          style={[
+            typography.small,
+            {
+              color: active ? '#fff' : colors.textSecondary,
+              fontWeight: '600',
+            },
+          ]}
+        >
+          {item.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderItem = ({ item }) => {
+    const isResult = tab === 'result';
+
+    return (
+      <TouchableOpacity activeOpacity={0.85} onPress={() => handleOpen(item)}>
+        <AppCard
+          style={{
+            marginBottom: spacing.sm,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
           <View
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              backgroundColor: `${colors.primary}18`,
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.md,
             }}
           >
-            <FileText size={20} color={colors.primary} />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[
-                typography.body,
-                {
-                  color: colors.text,
-                  fontWeight: '600',
-                  lineHeight: 20,
-                },
-              ]}
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                backgroundColor: `${colors.primary}18`,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: spacing.md,
+              }}
             >
-              {item.title}
-            </Text>
+              {isResult ? (
+                <Trophy size={20} color={colors.primary} />
+              ) : (
+                <FileText size={20} color={colors.primary} />
+              )}
+            </View>
 
-            <Text
-              style={[
-                typography.small,
-                {
-                  color: colors.textSecondary,
-                  marginTop: 2,
-                },
-              ]}
-            >
-              Ujian tersedia
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  typography.body,
+                  {
+                    color: colors.text,
+                    fontWeight: '600',
+                    lineHeight: 20,
+                  },
+                ]}
+              >
+                {item.title}
+              </Text>
+
+              <Text
+                style={[
+                  typography.small,
+                  {
+                    color: colors.textSecondary,
+                    marginTop: 2,
+                  },
+                ]}
+              >
+                {isResult ? `Nilai: ${item.score}` : 'Ujian tersedia'}
+              </Text>
+            </View>
+
+            <ChevronRight size={18} color={colors.textSecondary} />
           </View>
-
-          <ChevronRight size={18} color={colors.textSecondary} />
-        </View>
-      </AppCard>
-    </TouchableOpacity>
-  );
+        </AppCard>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <AppLayout>
@@ -149,16 +214,9 @@ export default function TryoutScreen({ navigation }) {
           paddingHorizontal: spacing.md,
         }}
       >
-        {/* HEADER */}
+        {/* Header */}
         <View style={{ marginBottom: spacing.md }}>
-          <Text
-            style={[
-              typography.small,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
-          >
+          <Text style={[typography.small, { color: colors.textSecondary }]}>
             Latihan ujian
           </Text>
 
@@ -175,7 +233,7 @@ export default function TryoutScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* SEARCH */}
+        {/* Search */}
         <View
           style={{
             flexDirection: 'row',
@@ -185,7 +243,7 @@ export default function TryoutScreen({ navigation }) {
             backgroundColor: colors.card || colors.background,
             borderRadius: 16,
             paddingHorizontal: 14,
-            marginBottom: spacing.md,
+            marginBottom: spacing.sm,
           }}
         >
           <Search size={18} color={colors.textSecondary} />
@@ -193,7 +251,9 @@ export default function TryoutScreen({ navigation }) {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Cari tryout..."
+            placeholder={
+              tab === 'tryout' ? 'Cari tryout...' : 'Cari hasil tryout...'
+            }
             placeholderTextColor={colors.textSecondary}
             style={{
               flex: 1,
@@ -205,7 +265,22 @@ export default function TryoutScreen({ navigation }) {
           />
         </View>
 
-        {/* INFO */}
+        {/* Tabs */}
+        <View
+          style={{
+            flexDirection: 'row',
+            padding: 4,
+            borderRadius: 16,
+            backgroundColor: colors.card || colors.background,
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginBottom: spacing.md,
+          }}
+        >
+          {tabs.map(renderTab)}
+        </View>
+
+        {/* Info */}
         <Text
           style={[
             typography.small,
@@ -215,10 +290,11 @@ export default function TryoutScreen({ navigation }) {
             },
           ]}
         >
-          {filteredTryouts.length} tryout tersedia
+          {activeData.length}{' '}
+          {tab === 'tryout' ? 'tryout tersedia' : 'hasil tersedia'}
         </Text>
 
-        {/* CONTENT */}
+        {/* Content */}
         {loading ? (
           <View
             style={{
@@ -231,7 +307,7 @@ export default function TryoutScreen({ navigation }) {
           </View>
         ) : (
           <FlatList
-            data={filteredTryouts}
+            data={activeData}
             keyExtractor={item => String(item.id)}
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
@@ -258,7 +334,9 @@ export default function TryoutScreen({ navigation }) {
                     },
                   ]}
                 >
-                  Tidak ada tryout ditemukan
+                  {tab === 'tryout'
+                    ? 'Tidak ada tryout ditemukan'
+                    : 'Belum ada hasil tryout'}
                 </Text>
               </View>
             }

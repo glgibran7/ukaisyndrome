@@ -6,14 +6,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  Linking,
   RefreshControl,
+  Linking,
 } from 'react-native';
 
 import {
   ChevronLeft,
   Search,
   FileText,
+  PlayCircle,
   ExternalLink,
   House,
 } from 'lucide-react-native';
@@ -26,16 +27,24 @@ import { useToast } from '../../context/ToastProvider';
 
 import { getMateriPeserta } from '../../api/materi/materi.api';
 
+const tabs = [
+  { key: 'all', label: 'Semua' },
+  { key: 'document', label: 'Dokumen' },
+  { key: 'video', label: 'Video' },
+];
+
 export default function MateriDetailScreen({ route, navigation }) {
   const { modulId, modulTitle } = route.params;
-  const [refreshing, setRefreshing] = useState(false);
 
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [materials, setMaterials] = useState([]);
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     loadMateri();
@@ -47,11 +56,10 @@ export default function MateriDetailScreen({ route, navigation }) {
 
       const data = await getMateriPeserta(modulId);
 
-      const filtered = (data || []).filter(item => item.type === 'document');
-
-      setMaterials(filtered);
+      setMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
       showToast(error?.message || 'Gagal memuat materi');
+      setMaterials([]);
     } finally {
       setLoading(false);
     }
@@ -59,75 +67,109 @@ export default function MateriDetailScreen({ route, navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
+
     try {
       await loadMateri();
-    } catch (error) {
-      showToast(error?.message || 'Gagal memuat materi');
     } finally {
       setRefreshing(false);
     }
   };
 
   const filteredMaterials = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    let result = Array.isArray(materials) ? materials : [];
 
-    if (!keyword) {
-      return materials;
+    if (activeTab !== 'all') {
+      result = result.filter(item => item.type === activeTab);
     }
 
-    return materials.filter(item =>
-      item.title?.toLowerCase().includes(keyword),
-    );
-  }, [materials, search]);
+    const keyword = search.trim().toLowerCase();
 
-  const openDocument = item => {
+    if (keyword) {
+      result = result.filter(item =>
+        item.title?.toLowerCase().includes(keyword),
+      );
+    }
+
+    return result;
+  }, [materials, activeTab, search]);
+
+  const openItem = item => {
     navigation.navigate('MateriViewer', {
       title: item.title,
       url: item.url,
     });
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity activeOpacity={0.85} onPress={() => openDocument(item)}>
-      <AppCard
+  const renderTab = tab => {
+    const active = activeTab === tab.key;
+
+    return (
+      <TouchableOpacity
+        key={tab.key}
+        activeOpacity={0.85}
+        onPress={() => setActiveTab(tab.key)}
         style={{
-          marginBottom: spacing.sm,
-          borderWidth: 1,
-          borderColor: colors.border,
+          flex: 1,
+          paddingVertical: 10,
+          borderRadius: 14,
+          alignItems: 'center',
+          backgroundColor: active ? colors.primary : 'transparent',
         }}
       >
-        <View
+        <Text
+          style={[
+            typography.small,
+            {
+              color: active ? '#fff' : colors.textSecondary,
+              fontWeight: '600',
+            },
+          ]}
+        >
+          {tab.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderItem = ({ item }) => {
+    const isVideo = item.type === 'video';
+
+    return (
+      <TouchableOpacity activeOpacity={0.85} onPress={() => openItem(item)}>
+        <AppCard
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            marginBottom: spacing.sm,
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
         >
           <View
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              backgroundColor: `${colors.primary}18`,
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.md,
             }}
           >
-            <FileText size={20} color={colors.primary} />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[
-                typography.body,
-                {
-                  color: colors.text,
-                  fontWeight: '600',
-                  lineHeight: 20,
-                },
-              ]}
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                backgroundColor: `${colors.primary}18`,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: spacing.md,
+              }}
             >
+              {isVideo ? (
+                <PlayCircle size={20} color={colors.primary} />
+              ) : (
+                <FileText size={20} color={colors.primary} />
+              )}
+            </View>
+
+            <View style={{ flex: 1 }}>
               <Text
+                numberOfLines={2}
                 style={[
                   typography.body,
                   {
@@ -141,14 +183,27 @@ export default function MateriDetailScreen({ route, navigation }) {
                   ?.toLowerCase()
                   .replace(/\b\w/g, char => char.toUpperCase())}
               </Text>
-            </Text>
-          </View>
 
-          <ExternalLink size={18} color={colors.textSecondary} />
-        </View>
-      </AppCard>
-    </TouchableOpacity>
-  );
+              <Text
+                style={[
+                  typography.small,
+                  {
+                    color: colors.textSecondary,
+                    marginTop: 4,
+                    textTransform: 'capitalize',
+                  },
+                ]}
+              >
+                {isVideo ? 'Video' : 'Dokumen'}
+              </Text>
+            </View>
+
+            <ExternalLink size={18} color={colors.textSecondary} />
+          </View>
+        </AppCard>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <AppLayout>
@@ -159,7 +214,6 @@ export default function MateriDetailScreen({ route, navigation }) {
           paddingHorizontal: spacing.md,
         }}
       >
-        {/* Header */}
         {/* Header */}
         <View
           style={{
@@ -245,7 +299,7 @@ export default function MateriDetailScreen({ route, navigation }) {
             backgroundColor: colors.card || colors.background,
             borderRadius: 16,
             paddingHorizontal: 14,
-            marginBottom: spacing.md,
+            marginBottom: spacing.sm,
           }}
         >
           <Search size={18} color={colors.textSecondary} />
@@ -253,7 +307,7 @@ export default function MateriDetailScreen({ route, navigation }) {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Cari dokumen..."
+            placeholder="Cari materi..."
             placeholderTextColor={colors.textSecondary}
             style={{
               flex: 1,
@@ -265,6 +319,21 @@ export default function MateriDetailScreen({ route, navigation }) {
           />
         </View>
 
+        {/* Tabs */}
+        <View
+          style={{
+            flexDirection: 'row',
+            padding: 4,
+            borderRadius: 16,
+            backgroundColor: colors.card || colors.background,
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginBottom: spacing.md,
+          }}
+        >
+          {tabs.map(renderTab)}
+        </View>
+
         <Text
           style={[
             typography.small,
@@ -274,7 +343,7 @@ export default function MateriDetailScreen({ route, navigation }) {
             },
           ]}
         >
-          {filteredMaterials.length} dokumen tersedia
+          {filteredMaterials.length} materi tersedia
         </Text>
 
         {loading ? (
@@ -316,7 +385,7 @@ export default function MateriDetailScreen({ route, navigation }) {
                     },
                   ]}
                 >
-                  Tidak ada dokumen ditemukan
+                  Tidak ada materi ditemukan
                 </Text>
               </View>
             }
