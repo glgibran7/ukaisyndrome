@@ -1,5 +1,11 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 
 import {
   Clock3,
@@ -11,13 +17,32 @@ import {
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
+import { startTryout } from '../../api/tryout/attempt.api';
 
 import { useTheme } from '../../theme/ThemeProvider';
 
 export default function TryoutDetailScreen({ route, navigation }) {
   const { colors, spacing, typography } = useTheme();
+  const [starting, setStarting] = useState(false);
 
   const { tryout } = route.params;
+
+  const handleStartTryout = async () => {
+    try {
+      setStarting(true);
+
+      const response = await startTryout(tryout.id);
+
+      navigation.replace('TryoutQuestion', {
+        attemptToken: response.data.attempt_token,
+        tryout,
+      });
+    } catch (error) {
+      console.log('START TRYOUT ERROR:', error);
+    } finally {
+      setStarting(false);
+    }
+  };
 
   const isDisabled =
     tryout?.status === 'closed' || tryout?.status === 'upcoming';
@@ -275,13 +300,9 @@ export default function TryoutDetailScreen({ route, navigation }) {
           }}
         >
           <TouchableOpacity
-            disabled={isDisabled}
+            disabled={isDisabled || starting}
             activeOpacity={0.9}
-            onPress={() =>
-              navigation.navigate('TryoutQuestion', {
-                tryoutId: tryout?.id,
-              })
-            }
+            onPress={handleStartTryout}
             style={{
               backgroundColor: isDisabled ? colors.border : colors.primary,
 
@@ -294,22 +315,28 @@ export default function TryoutDetailScreen({ route, navigation }) {
               opacity: isDisabled ? 0.7 : 1,
             }}
           >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: '800',
-                marginRight: 8,
-              }}
-            >
-              {tryout?.status === 'upcoming'
-                ? 'Belum Dimulai'
-                : tryout?.status === 'closed'
-                ? 'Tryout Ditutup'
-                : 'Mulai Tryout'}
-            </Text>
+            {starting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 15,
+                    fontWeight: '800',
+                    marginRight: 8,
+                  }}
+                >
+                  {tryout?.status === 'upcoming'
+                    ? 'Belum Dimulai'
+                    : tryout?.status === 'closed'
+                    ? 'Tryout Ditutup'
+                    : 'Mulai Tryout'}
+                </Text>
 
-            {!isDisabled && <ChevronRight size={18} color="#fff" />}
+                {!isDisabled && <ChevronRight size={18} color="#fff" />}
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
