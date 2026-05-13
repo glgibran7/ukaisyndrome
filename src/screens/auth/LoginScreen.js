@@ -222,7 +222,7 @@ export default function LoginScreen({ onLoginSuccess }) {
               },
             ]}
           >
-            Masuk ke akunmu untuk melanjutkan belajar bersama Ukai Syndrome.
+            Login untuk melanjutkan pembelajaran
           </Text>
         </View>
 
@@ -359,8 +359,66 @@ export default function LoginScreen({ onLoginSuccess }) {
             },
           ]}
         >
-          Belum punya akun ? Silahkan hubungi admin
+          Belum punya akun ?
         </Text>
+        <Text
+          style={[
+            typography.small,
+            {
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginTop: spacing.xs,
+            },
+          ]}
+        >
+          Hubungi admin untuk mendapatkan akses
+        </Text>
+        {/* ── Footer ── */}
+        <View
+          style={{
+            alignItems: 'center',
+            marginTop: spacing.xl,
+            paddingBottom: spacing.md,
+          }}
+        >
+          {/* Divider */}
+          <View
+            style={{
+              width: 48,
+              height: 4,
+              borderRadius: 999,
+              backgroundColor: `${colors.primary}25`,
+              marginBottom: spacing.md,
+            }}
+          />
+
+          <Text
+            style={{
+              marginTop: 4,
+              fontSize: 16,
+              fontWeight: '800',
+              color: colors.primary,
+              letterSpacing: 0.5,
+            }}
+          >
+            Outlook Project
+          </Text>
+
+          {/* Copyright */}
+          <Text
+            style={{
+              marginTop: 8,
+              fontSize: 11,
+              color: colors.textSecondary,
+              opacity: 0.7,
+              textAlign: 'center',
+              lineHeight: 18,
+            }}
+          >
+            © {new Date().getFullYear()} Outlook Project.{'\n'}
+            All rights reserved.
+          </Text>
+        </View>
       </KeyboardAwareScrollView>
 
       <AppLoader visible={loading} />

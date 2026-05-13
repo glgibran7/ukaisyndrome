@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { setToastBridge } from '../utils/toastBridge'; // ← tambah import ini
 
 const ToastContext = createContext({
   showToast: () => {},
@@ -58,19 +59,13 @@ export function ToastProvider({ children }) {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setToast(prev => ({
-        ...prev,
-        visible: false,
-      }));
+      setToast(prev => ({ ...prev, visible: false }));
 
       showing.current = false;
 
       if (queue.current.length > 0) {
         const next = queue.current.shift();
-
-        setTimeout(() => {
-          showInternal(next);
-        }, 80);
+        setTimeout(() => showInternal(next), 80);
       }
     });
   }, [opacity, translateY]);
@@ -79,11 +74,7 @@ export function ToastProvider({ children }) {
     ({ message, type }) => {
       showing.current = true;
 
-      setToast({
-        visible: true,
-        message,
-        type,
-      });
+      setToast({ visible: true, message, type });
 
       translateY.setValue(-28);
       opacity.setValue(0);
@@ -102,13 +93,9 @@ export function ToastProvider({ children }) {
         }),
       ]).start();
 
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-      timeoutRef.current = setTimeout(() => {
-        hideInternal();
-      }, 2300);
+      timeoutRef.current = setTimeout(() => hideInternal(), 2300);
     },
     [hideInternal, opacity, translateY],
   );
@@ -116,12 +103,10 @@ export function ToastProvider({ children }) {
   const showToast = useCallback(
     (message, type = 'error') => {
       const payload = { message, type };
-
       if (showing.current) {
         queue.current.push(payload);
         return;
       }
-
       showInternal(payload);
     },
     [showInternal],
@@ -129,13 +114,15 @@ export function ToastProvider({ children }) {
 
   const hideToast = useCallback(() => {
     if (!showing.current) return;
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     hideInternal();
   }, [hideInternal]);
+
+  // ─── Inject ke bridge agar bisa dipanggil dari luar React ───
+  useEffect(() => {
+    setToastBridge(showToast);
+    return () => setToastBridge(undefined);
+  }, [showToast]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -143,9 +130,7 @@ export function ToastProvider({ children }) {
         Math.abs(gestureState.dy) > 4,
 
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy < 0) {
-          translateY.setValue(gestureState.dy);
-        }
+        if (gestureState.dy < 0) translateY.setValue(gestureState.dy);
       },
 
       onPanResponderRelease: (_, gestureState) => {
@@ -153,7 +138,6 @@ export function ToastProvider({ children }) {
           hideToast();
           return;
         }
-
         Animated.spring(translateY, {
           toValue: 0,
           speed: 18,
@@ -164,12 +148,7 @@ export function ToastProvider({ children }) {
     }),
   ).current;
 
-  const value = useMemo(
-    () => ({
-      showToast,
-    }),
-    [showToast],
-  );
+  const value = useMemo(() => ({ showToast }), [showToast]);
 
   return (
     <ToastContext.Provider value={value}>
@@ -192,10 +171,7 @@ export function ToastProvider({ children }) {
           <TouchableOpacity
             activeOpacity={0.97}
             onPress={hideToast}
-            style={{
-              borderRadius: 18,
-              overflow: 'hidden',
-            }}
+            style={{ borderRadius: 18, overflow: 'hidden' }}
           >
             <View
               style={{
@@ -203,17 +179,14 @@ export function ToastProvider({ children }) {
                 paddingHorizontal: 14,
                 paddingVertical: 11,
                 borderRadius: 18,
-
                 backgroundColor: 'rgba(255,255,255,0.92)',
                 borderWidth: 1,
                 borderColor: 'rgba(255,255,255,0.7)',
-
                 shadowColor: '#000',
                 shadowOpacity: 0.08,
                 shadowRadius: 16,
                 shadowOffset: { width: 0, height: 6 },
                 elevation: 6,
-
                 flexDirection: 'row',
                 alignItems: 'center',
               }}
@@ -264,10 +237,8 @@ export function ToastProvider({ children }) {
 
 export function useToast() {
   const context = useContext(ToastContext);
-
   if (!context) {
     throw new Error('useToast harus dipakai di dalam ToastProvider');
   }
-
   return context;
 }

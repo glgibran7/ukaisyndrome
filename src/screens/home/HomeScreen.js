@@ -219,6 +219,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     try {
       await fetchUser();
+      await fetchData();
     } catch (e) {
       console.log('Refresh gagal', e);
     } finally {

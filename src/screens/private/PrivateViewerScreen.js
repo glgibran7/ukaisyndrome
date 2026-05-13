@@ -6,6 +6,7 @@ import { ChevronLeft, House } from 'lucide-react-native';
 import AppLayout from '../../components/AppLayout';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useUserStore } from '../../store/userStore';
+import { useScreenSecurity } from '../../hook/useScreenSecurity';
 
 function transformGoogleDriveUrl(url) {
   if (!url) return '';
@@ -33,6 +34,8 @@ export default function PrivateViewerScreen({ route, navigation }) {
   const previewUrl = transformGoogleDriveUrl(url);
 
   const watermarks = Array.from({ length: 48 });
+
+  const { isRecording } = useScreenSecurity();
 
   return (
     <AppLayout>
@@ -184,6 +187,7 @@ export default function PrivateViewerScreen({ route, navigation }) {
             />
           </View>
         </View>
+        {Platform.OS === 'ios' && isRecording && <RecordingOverlay />}
       </View>
     </AppLayout>
   );
