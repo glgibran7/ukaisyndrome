@@ -8,7 +8,7 @@ import { API_BASE_URL } from '@env';
 
 let isLogoutTriggered = false;
 
-async function request(endpoint, options = {}) {
+async function client(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const useAuth = options.useAuth !== false;
@@ -95,4 +95,4 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
-export default request;
+export default client;

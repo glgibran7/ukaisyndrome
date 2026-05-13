@@ -26,7 +26,7 @@ export async function getAttemptQuestions(attemptToken) {
 // ======================================================
 
 export async function saveAttemptAnswers(attemptToken, answers) {
-  return request(`/tryout/attempt/${attemptToken}/answer`, {
+  return request(`/tryout/attempt/${attemptToken}/answers`, {
     method: 'PUT',
     body: JSON.stringify({
       answers,

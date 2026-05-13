@@ -13,6 +13,8 @@ import VideoViewScreen from '../screens/video/VideoViewScreen';
 import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
 import PrivateViewScreen from '../screens/private/PrivateViewerScreen';
 import TriOutDetailScreen from '../screens/tryout/TryoutDetailScreen';
+import TryOutResult from '../screens/tryout/TryoutResultScreen';
+import TryoutResultScreen from '../screens/tryout/TryoutResultScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +32,7 @@ export default function MainStack() {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       <Stack.Screen name="PrivateViewer" component={PrivateViewScreen} />
+      <Stack.Screen name="TryoutResult" component={TryoutResultScreen} />
       <Stack.Screen name="TryoutDetail" component={TriOutDetailScreen} />
     </Stack.Navigator>
   );
