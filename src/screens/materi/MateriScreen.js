@@ -93,7 +93,7 @@ export default function MateriScreen({ navigation }) {
               width: 42,
               height: 42,
               borderRadius: 14,
-              backgroundColor: `${colors.primary}18`,
+              backgroundColor: `${colors.primary}`,
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: spacing.md,

@@ -165,8 +165,8 @@ function StatPill({ icon, label, value, colors, typography }) {
       style={[
         styles.statPill,
         {
-          backgroundColor: `${colors.primary}0D`,
-          borderColor: `${colors.primary}1A`,
+          backgroundColor: `${colors.primary}`,
+          borderColor: `${colors.primary}`,
         },
       ]}
     >

@@ -17,8 +17,10 @@ import AppCard from '../../components/ui/AppCard';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useToast } from '../../context/ToastProvider';
 
-// nanti ganti API asli
-// import { getTryoutPeserta, getTryoutResults } from '../../api/tryout/tryout.api';
+import {
+  getTryoutPeserta,
+  getTryoutResults,
+} from '../../api/tryout/tryout.api';
 
 const tabs = [
   { key: 'tryout', label: 'Tryout' },
@@ -46,31 +48,27 @@ export default function TryoutScreen({ navigation }) {
     try {
       setLoading(true);
 
-      // dummy data
-      const tryoutData = [
-        { id: 1, title: 'Tryout UKAI Batch 1' },
-        { id: 2, title: 'Simulasi OSCE Level 1' },
-        { id: 3, title: 'Tryout Farmakologi Dasar' },
-      ];
+      // ambil tryout
+      const tryoutRes = await getTryoutPeserta();
 
-      const resultData = [
-        { id: 101, title: 'Tryout UKAI Batch 1', score: 82 },
-        { id: 102, title: 'Simulasi OSCE Level 1', score: 76 },
-      ];
+      setTryouts(tryoutRes?.data || []);
 
-      setTryouts(tryoutData);
-      setResults(resultData);
-
-      // nanti kalau API
-      // const tryoutData = await getTryoutPeserta();
-      // const resultData = await getTryoutResults();
+      // hasil tryout optional
+      try {
+        const resultRes = await getTryoutResults();
+        setResults(resultRes?.data || []);
+      } catch (err) {
+        console.log('Result endpoint belum tersedia:', err);
+        setResults([]);
+      }
     } catch (error) {
-      showToast(error?.message || 'Gagal memuat data tryout');
+      console.log('TRYOUT ERROR:', error);
+
+      showToast(error?.message || 'Gagal memuat data tryout', 'error');
     } finally {
       setLoading(false);
     }
   };
-
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -92,8 +90,7 @@ export default function TryoutScreen({ navigation }) {
   const handleOpen = item => {
     if (tab === 'tryout') {
       navigation.navigate('TryoutDetail', {
-        tryoutId: item.id,
-        title: item.title,
+        tryout: item,
       });
       return;
     }
@@ -134,17 +131,236 @@ export default function TryoutScreen({ navigation }) {
       </TouchableOpacity>
     );
   };
+  const getStatusConfig = status => {
+    switch (status) {
+      case 'ongoing':
+        return {
+          label: 'Berlangsung',
+          color: '#22C55E',
+          bg: 'rgba(34,197,94,0.12)',
+        };
+
+      case 'upcoming':
+        return {
+          label: 'Akan Datang',
+          color: '#F59E0B',
+          bg: 'rgba(245,158,11,0.12)',
+        };
+
+      case 'closed':
+        return {
+          label: 'Ditutup',
+          color: '#EF4444',
+          bg: 'rgba(239,68,68,0.12)',
+        };
+
+      default:
+        return {
+          label: 'Unknown',
+          color: colors.textSecondary,
+          bg: `${colors.textSecondary}15`,
+        };
+    }
+  };
 
   const renderItem = ({ item }) => {
     const isResult = tab === 'result';
 
+    // =====================================================
+    // RESULT CARD
+    // =====================================================
+    if (isResult) {
+      return (
+        <TouchableOpacity activeOpacity={0.9} onPress={() => handleOpen(item)}>
+          <AppCard
+            style={{
+              marginBottom: spacing.sm,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 18,
+              paddingVertical: 14,
+              paddingHorizontal: 14,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              {/* SCORE */}
+              <View
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 18,
+                  backgroundColor: `${colors.primary}12`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 14,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '800',
+                    color: colors.primary,
+                  }}
+                >
+                  {item.score}
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 9,
+                    fontWeight: '700',
+                    color: colors.primary,
+                    marginTop: 1,
+                  }}
+                >
+                  SCORE
+                </Text>
+              </View>
+
+              {/* CONTENT */}
+              <View style={{ flex: 1 }}>
+                {/* TITLE */}
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    typography.body,
+                    {
+                      color: colors.text,
+                      fontWeight: '700',
+                      fontSize: 14,
+                    },
+                  ]}
+                >
+                  {item.title}
+                </Text>
+
+                {/* ATTEMPT */}
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                    marginTop: 3,
+                    fontWeight: '600',
+                  }}
+                >
+                  Percobaan ke-{item.attempt_ke}
+                </Text>
+
+                {/* STATS */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    marginTop: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#22C55E',
+                      fontSize: 11,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {item.benar} benar
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      marginHorizontal: 6,
+                      fontSize: 10,
+                    }}
+                  >
+                    •
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: '#EF4444',
+                      fontSize: 11,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {item.salah} salah
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      marginHorizontal: 6,
+                      fontSize: 10,
+                    }}
+                  >
+                    •
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: '#F59E0B',
+                      fontSize: 11,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {item.kosong} kosong
+                  </Text>
+                </View>
+
+                {/* DATE */}
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 10,
+                    marginTop: 7,
+                  }}
+                >
+                  {new Date(item.tanggal).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </Text>
+              </View>
+
+              <ChevronRight size={18} color={colors.textSecondary} />
+            </View>
+          </AppCard>
+        </TouchableOpacity>
+      );
+    }
+
+    // =====================================================
+    // TRYOUT CARD
+    // =====================================================
+
+    const statusConfig = getStatusConfig(item.status);
+
+    const disabled = item.status === 'closed' || item.status === 'upcoming';
+
     return (
-      <TouchableOpacity activeOpacity={0.85} onPress={() => handleOpen(item)}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        disabled={disabled}
+        onPress={() => handleOpen(item)}
+      >
         <AppCard
           style={{
             marginBottom: spacing.sm,
             borderWidth: 1,
-            borderColor: colors.border,
+
+            borderColor:
+              item.status === 'ongoing' ? colors.border : '${colors.primary}20',
+
+            opacity: item.status === 'closed' ? 0.7 : 1,
+
+            borderRadius: 18,
+            paddingVertical: 13,
+            paddingHorizontal: 14,
           }}
         >
           <View
@@ -153,52 +369,156 @@ export default function TryoutScreen({ navigation }) {
               alignItems: 'center',
             }}
           >
+            {/* ICON */}
             <View
               style={{
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 borderRadius: 14,
-                backgroundColor: `${colors.primary}18`,
+                backgroundColor: `${colors.primary}14`,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginRight: spacing.md,
+                marginRight: 12,
               }}
             >
-              {isResult ? (
-                <Trophy size={20} color={colors.primary} />
-              ) : (
-                <FileText size={20} color={colors.primary} />
-              )}
+              <FileText size={20} color={colors.primary} />
             </View>
 
+            {/* CONTENT */}
             <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  typography.body,
-                  {
-                    color: colors.text,
-                    fontWeight: '600',
-                    lineHeight: 20,
-                  },
-                ]}
+              {/* TITLE */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
-                {item.title}
-              </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    typography.body,
+                    {
+                      flex: 1,
+                      color: colors.text,
+                      fontWeight: '700',
+                      fontSize: 14,
+                      marginRight: 8,
+                    },
+                  ]}
+                >
+                  {item.title}
+                </Text>
 
-              <Text
-                style={[
-                  typography.small,
-                  {
-                    color: colors.textSecondary,
-                    marginTop: 2,
-                  },
-                ]}
+                {/* STATUS */}
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 999,
+                    backgroundColor: statusConfig.bg,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: statusConfig.color,
+                      fontSize: 9,
+                      fontWeight: '800',
+                    }}
+                  >
+                    {statusConfig.label}
+                  </Text>
+                </View>
+              </View>
+
+              {/* META */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  marginTop: 7,
+                }}
               >
-                {isResult ? `Nilai: ${item.score}` : 'Ujian tersedia'}
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: '600',
+                  }}
+                >
+                  {item.total_soal} soal
+                </Text>
+
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    marginHorizontal: 5,
+                    fontSize: 10,
+                  }}
+                >
+                  •
+                </Text>
+
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: '600',
+                  }}
+                >
+                  {item.duration} menit
+                </Text>
+
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    marginHorizontal: 5,
+                    fontSize: 10,
+                  }}
+                >
+                  •
+                </Text>
+
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: '600',
+                  }}
+                >
+                  {item.max_attempt}x
+                </Text>
+              </View>
+
+              {/* DATE */}
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: 10,
+                  marginTop: 6,
+                }}
+              >
+                {new Date(item.access_start_at).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+                {' - '}
+                {new Date(item.access_end_at).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
               </Text>
             </View>
 
-            <ChevronRight size={18} color={colors.textSecondary} />
+            {!disabled && (
+              <ChevronRight
+                size={18}
+                color={colors.textSecondary}
+                style={{ marginLeft: 8 }}
+              />
+            )}
           </View>
         </AppCard>
       </TouchableOpacity>
@@ -308,9 +628,20 @@ export default function TryoutScreen({ navigation }) {
         ) : (
           <FlatList
             data={activeData}
-            keyExtractor={item => String(item.id)}
+            keyExtractor={(item, index) => {
+              if (tab === 'result') {
+                return item.attempt_token
+                  ? String(item.attempt_token)
+                  : `result-${index}`;
+              }
+
+              return item.id ? String(item.id) : `tryout-${index}`;
+            }}
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingBottom: 120, // space untuk bottom tab
+            }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
