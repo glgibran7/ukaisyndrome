@@ -17,6 +17,9 @@ import {
   BarChart3,
   User,
   Sparkles,
+  SquareLibrary,
+  BookOpenText,
+  BookType,
 } from 'lucide-react-native';
 
 import HomeScreen from '../screens/home/HomeScreen';
@@ -37,9 +40,9 @@ const Tab = createBottomTabNavigator();
 ───────────────────────────────────────────── */
 const iconMap = {
   Home: House,
-  Materi: BookOpen,
+  Materi: BookOpenText,
   Private: Sparkles,
-  Tryout: FileText,
+  Tryout: BookType,
   Hasil: BarChart3,
   Profil: User,
 };

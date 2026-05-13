@@ -1,43 +1,67 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  Platform,
+  StyleSheet,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
-import { ChevronLeft, House } from 'lucide-react-native';
+import { ChevronLeft, House, ShieldOff } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useUserStore } from '../../store/userStore';
+import { useScreenSecurity } from '../../hook/useScreenSecurity';
 
+/* ─────────────────────────────────────────────
+   HELPER
+───────────────────────────────────────────── */
 function transformGoogleDriveUrl(url) {
-  if (!url) {
-    return '';
-  }
-
-  if (url.includes('/preview')) {
-    return url;
-  }
-
+  if (!url) return '';
+  if (url.includes('/preview')) return url;
   const match = url.match(/\/d\/(.*?)\//);
-
-  if (match?.[1]) {
-    return `https://drive.google.com/file/d/${match[1]}/preview`;
-  }
-
+  if (match?.[1]) return `https://drive.google.com/file/d/${match[1]}/preview`;
   return url;
 }
 
+/* ─────────────────────────────────────────────
+   OVERLAY — tampil saat screen recording (iOS)
+───────────────────────────────────────────── */
+function RecordingOverlay() {
+  return (
+    <View style={styles.overlay}>
+      <ShieldOff size={48} color="#fff" strokeWidth={1.5} />
+      <Text style={styles.overlayTitle}>Konten Dilindungi</Text>
+      <Text style={styles.overlayDesc}>
+        Perekaman layar tidak diizinkan pada halaman ini.
+      </Text>
+    </View>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   MAIN SCREEN
+───────────────────────────────────────────── */
 export default function MateriViewerScreen({ route, navigation }) {
   const { title, url } = route.params;
   const { colors, spacing, typography } = useTheme();
+
   const user = useUserStore(state => state.user);
   const name = user?.name || 'Peserta';
-  const watermarks = Array.from({ length: 48 }); // jumlah teks
+  const watermarks = Array.from({ length: 48 });
 
   const previewUrl = transformGoogleDriveUrl(url);
+
+  // Android: FLAG_SECURE aktif selama halaman ini terbuka
+  // iOS: isRecording true saat screen recording terdeteksi
+  const { isRecording } = useScreenSecurity();
 
   return (
     <AppLayout>
       <View style={{ flex: 1 }}>
-        {/* Header */}
+        {/* ── Header ── */}
         <View
           style={{
             flexDirection: 'row',
@@ -52,10 +76,7 @@ export default function MateriViewerScreen({ route, navigation }) {
         >
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={{
-              marginRight: spacing.sm,
-              padding: 4,
-            }}
+            style={{ marginRight: spacing.sm, padding: 4 }}
           >
             <ChevronLeft size={22} color={colors.text} />
           </TouchableOpacity>
@@ -64,26 +85,16 @@ export default function MateriViewerScreen({ route, navigation }) {
             numberOfLines={2}
             style={[
               typography.body,
-              {
-                flex: 1,
-                color: colors.text,
-                fontWeight: '700',
-              },
+              { flex: 1, color: colors.text, fontWeight: '700' },
             ]}
           >
             <Text
               style={[
                 typography.body,
-                {
-                  color: colors.text,
-                  fontWeight: '600',
-                  lineHeight: 20,
-                },
+                { color: colors.text, fontWeight: '600', lineHeight: 20 },
               ]}
             >
-              {title
-                ?.toLowerCase()
-                .replace(/\b\w/g, char => char.toUpperCase())}
+              {title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
             </Text>
           </Text>
 
@@ -92,12 +103,7 @@ export default function MateriViewerScreen({ route, navigation }) {
               navigation.reset({
                 index: 0,
                 routes: [
-                  {
-                    name: 'Tabs',
-                    state: {
-                      routes: [{ name: 'Home' }],
-                    },
-                  },
+                  { name: 'Tabs', state: { routes: [{ name: 'Home' }] } },
                 ],
               })
             }
@@ -115,7 +121,7 @@ export default function MateriViewerScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Watermark */}
+        {/* ── Watermark ── */}
         <View
           pointerEvents="none"
           style={{
@@ -149,7 +155,7 @@ export default function MateriViewerScreen({ route, navigation }) {
           ))}
         </View>
 
-        {/* Viewer */}
+        {/* ── Viewer ── */}
         <View style={{ flex: 1 }}>
           <WebView
             source={{ uri: previewUrl }}
@@ -176,15 +182,41 @@ export default function MateriViewerScreen({ route, navigation }) {
           >
             <Image
               source={require('../../assets/images/logo.png')}
-              style={{
-                width: 48,
-                height: 48,
-                resizeMode: 'contain',
-              }}
+              style={{ width: 48, height: 48, resizeMode: 'contain' }}
             />
           </View>
         </View>
+
+        {/* ── iOS: overlay hitam saat screen recording terdeteksi ── */}
+        {Platform.OS === 'ios' && isRecording && <RecordingOverlay />}
       </View>
     </AppLayout>
   );
 }
+
+/* ─────────────────────────────────────────────
+   STYLES
+───────────────────────────────────────────── */
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  overlayTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  overlayDesc: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 20,
+  },
+});

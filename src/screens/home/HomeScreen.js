@@ -140,7 +140,6 @@ function ModuleCard({ module, spacing }) {
       useNativeDriver: true,
       speed: 30,
     }).start();
-
   return (
     <TouchableOpacity
       activeOpacity={1}
@@ -484,31 +483,6 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* ── Quick Stats Row ── */}
-          {/* <View style={[styles.statsRow, { marginBottom: spacing.lg }]}>
-            <StatPill
-              icon="📚"
-              label="Modul"
-              value={modules.length || '—'}
-              colors={colors}
-              typography={typography}
-            />
-            <StatPill
-              icon="🎓"
-              label="Mentor"
-              value={mentors.length || '—'}
-              colors={colors}
-              typography={typography}
-            />
-            <StatPill
-              icon="🏆"
-              label="Skor"
-              value="92"
-              colors={colors}
-              typography={typography}
-            />
-          </View> */}
-
           {/* ── Mentors ── */}
           <View style={{ marginBottom: spacing.lg }}>
             <SectionHeader
@@ -565,7 +539,6 @@ export default function HomeScreen() {
               </ScrollView>
             )}
           </View>
-
           {/* ── Modules ── */}
           <View style={{ marginBottom: spacing.xl }}>
             <SectionHeader
