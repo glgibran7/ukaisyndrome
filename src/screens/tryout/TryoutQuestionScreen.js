@@ -16,7 +16,10 @@ import {
   StyleSheet,
   Animated,
   BackHandler,
+  FlatList,
 } from 'react-native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AlertTriangle, CheckCircle, Clock, Send } from 'lucide-react-native';
 
@@ -32,13 +35,15 @@ import {
 } from '../../api/tryout/attempt.api';
 
 import TryoutHeader from '../../components/tryout/TryoutHeader';
-import QuestionPalette from '../../components/tryout/QuestionPalette';
+import QuestionPaletteModal from '../../components/tryout/QuestionPaletteModal';
 import QuestionCard from '../../components/tryout/QuestionCard';
 import OptionCard from '../../components/tryout/OptionCard';
 import TryoutFooter from '../../components/tryout/TryoutFooter';
 
 import useTryoutTimer from '../../hook/useTryoutTimer';
 import { formatTime } from '../../utils/formatTime';
+
+const STORAGE_KEY = 'ACTIVE_TRYOUT_SESSION';
 
 const OPTIONS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -210,7 +215,24 @@ export default function TryoutQuestionScreen({ route, navigation }) {
   const [submitVisible, setSubmitVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const { remainingTime, setRemainingTime } = useTryoutTimer(0);
+  const [endTime, setEndTime] = useState(null);
+  const [remainingTime, setRemainingTime] = useState(0);
+
+  useEffect(() => {
+    if (!endTime) return;
+
+    const updateTimer = () => {
+      const diff = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+
+      setRemainingTime(diff);
+    };
+
+    updateTimer();
+
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [endTime]);
 
   // ── Blokir back button Android ──────────────────────
   useEffect(() => {
@@ -224,20 +246,71 @@ export default function TryoutQuestionScreen({ route, navigation }) {
 
   // ── Load questions ──────────────────────────────────
   useEffect(() => {
-    loadQuestions();
+    restoreSession();
   }, []);
+
+  useEffect(() => {
+    persistSession();
+  }, [answers, currentIndex, remainingTime]);
+
+  const restoreSession = async () => {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+
+      if (!raw) {
+        loadQuestions();
+        return;
+      }
+
+      const session = JSON.parse(raw);
+
+      // hanya restore jika token sama
+      if (session.attemptToken === attemptToken) {
+        setAnswers(session.answers || {});
+        setCurrentIndex(session.currentIndex || 0);
+        setEndTime(session.endTime || null);
+      }
+
+      loadQuestions();
+    } catch (e) {
+      console.log('RESTORE SESSION ERROR', e);
+      loadQuestions();
+    }
+  };
 
   const loadQuestions = async () => {
     try {
       setLoading(true);
       const response = await getAttemptQuestions(attemptToken);
       setQuestions(response.data.questions || []);
-      setRemainingTime(response.data.remaining_time || 0);
+      const durationInSeconds = response.data.duration * 60 || 0;
+
+      setEndTime(prev => {
+        if (prev) return prev;
+
+        return Date.now() + durationInSeconds * 1000;
+      });
     } catch (error) {
       console.log('GET QUESTION ERROR:', error);
       showToast(error?.message || 'Gagal memuat soal tryout', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const persistSession = async extraAnswers => {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          attemptToken,
+          answers: extraAnswers || answers,
+          currentIndex,
+          endTime,
+        }),
+      );
+    } catch (e) {
+      console.log('SAVE SESSION ERROR', e);
     }
   };
 
@@ -265,13 +338,19 @@ export default function TryoutQuestionScreen({ route, navigation }) {
 
   // ── Select answer ───────────────────────────────────
   const selectAnswer = (questionId, option) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: {
-        answer: option.toUpperCase(),
-        ragu: prev?.[questionId]?.ragu || false,
-      },
-    }));
+    setAnswers(prev => {
+      const updated = {
+        ...prev,
+        [questionId]: {
+          answer: option.toUpperCase(),
+          ragu: prev?.[questionId]?.ragu || false,
+        },
+      };
+
+      persistSession(updated);
+
+      return updated;
+    });
   };
 
   // ── Toggle ragu ─────────────────────────────────────
@@ -313,7 +392,7 @@ export default function TryoutQuestionScreen({ route, navigation }) {
       setSubmitVisible(false);
 
       showToast('Tryout berhasil dikumpulkan!', 'success');
-
+      await AsyncStorage.removeItem(STORAGE_KEY);
       // Navigate ke halaman hasil
       navigation.replace('TryoutResult', {
         attemptToken,
@@ -341,7 +420,7 @@ export default function TryoutQuestionScreen({ route, navigation }) {
     return (
       <AppLayout>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color="#0000FF " />
         </View>
       </AppLayout>
     );
@@ -445,101 +524,14 @@ export default function TryoutQuestionScreen({ route, navigation }) {
       </View>
 
       {/* ── MODAL PALETTE ── */}
-      <Modal
+      <QuestionPaletteModal
         visible={paletteVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPaletteVisible(false)}
-      >
-        <View style={[styles.paletteBackdrop, { padding: spacing.md }]}>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => setPaletteVisible(false)}
-            style={StyleSheet.absoluteFill}
-          />
-
-          <View
-            style={[styles.paletteCard, { backgroundColor: colors.background }]}
-          >
-            {/* Header */}
-            <View style={{ marginBottom: spacing.md }}>
-              <Text style={[styles.paletteTitle, { color: colors.text }]}>
-                Navigasi Soal
-              </Text>
-              <Text
-                style={{
-                  color: colors.textSecondary,
-                  marginTop: 4,
-                  fontSize: 12,
-                }}
-              >
-                Hijau = sudah dijawab • Kuning = ragu-ragu
-              </Text>
-            </View>
-
-            {/* Grid */}
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.paletteGrid}>
-                {questions.map((item, index) => {
-                  const ans = answers?.[item.id];
-                  const answered = !!ans?.answer;
-                  const isRagu = ans?.ragu;
-                  const active = index === currentIndex;
-
-                  const bg = active
-                    ? colors.primary
-                    : isRagu
-                    ? '#F59E0B'
-                    : answered
-                    ? '#22C55E'
-                    : colors.card;
-
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      activeOpacity={0.9}
-                      onPress={() => {
-                        setCurrentIndex(index);
-                        setPaletteVisible(false);
-                      }}
-                      style={[
-                        styles.paletteCell,
-                        {
-                          backgroundColor: bg,
-                          borderColor: active ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.paletteCellText,
-                          {
-                            color:
-                              active || answered || isRagu
-                                ? '#fff'
-                                : colors.text,
-                          },
-                        ]}
-                      >
-                        {index + 1}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-
-            {/* Close */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setPaletteVisible(false)}
-              style={[styles.paletteClose, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.paletteCloseText}>Tutup</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setPaletteVisible(false)}
+        questions={questions}
+        answers={answers}
+        currentIndex={currentIndex}
+        onSelect={index => setCurrentIndex(index)}
+      />
 
       {/* ── MODAL SUBMIT ── */}
       <SubmitModal
@@ -597,12 +589,11 @@ const styles = StyleSheet.create({
   paletteGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   paletteCell: {
     width: '18%',
-    aspectRatio: 1,
-    margin: '1%',
+    height: 54,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   paletteCellText: { fontWeight: '800' },
   paletteClose: {

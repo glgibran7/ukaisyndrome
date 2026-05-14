@@ -53,3 +53,12 @@ export async function submitAttempt(attemptToken) {
     method: 'POST',
   });
 }
+
+// ======================================================
+// TRYOUT REPORT / PEMBAHASAN
+// GET /tryout/report/{attempt_token}
+// ======================================================
+
+export async function getTryoutReport(attemptToken) {
+  return request(`/tryout/report/${attemptToken}`);
+}

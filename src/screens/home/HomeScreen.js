@@ -8,13 +8,18 @@ import {
   Animated,
   TouchableOpacity,
   RefreshControl,
+  Modal,
   Dimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { X, Sun, SunMoon } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import { useUserStore } from '../../store/userStore';
 import { useTheme } from '../../theme/ThemeProvider';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MENTOR_CARD_WIDTH = 128;
 const MODULE_CARD_WIDTH = 128;
 
@@ -92,7 +97,6 @@ function SectionHeader({ title, subtitle, colors, typography, spacing }) {
 // ─── Mentor card ──────────────────────────────────────────────────────────────
 function MentorCard({ mentor, spacing }) {
   const scale = useRef(new Animated.Value(1)).current;
-
   const onPressIn = () =>
     Animated.spring(scale, {
       toValue: 0.95,
@@ -127,7 +131,6 @@ function MentorCard({ mentor, spacing }) {
 // ─── Module card ──────────────────────────────────────────────────────────────
 function ModuleCard({ module, spacing }) {
   const scale = useRef(new Animated.Value(1)).current;
-
   const onPressIn = () =>
     Animated.spring(scale, {
       toValue: 0.96,
@@ -140,6 +143,7 @@ function ModuleCard({ module, spacing }) {
       useNativeDriver: true,
       speed: 30,
     }).start();
+
   return (
     <TouchableOpacity
       activeOpacity={1}
@@ -158,43 +162,145 @@ function ModuleCard({ module, spacing }) {
   );
 }
 
-// ─── Quick stat pill ──────────────────────────────────────────────────────────
-function StatPill({ icon, label, value, colors, typography }) {
+// ─── Ads Modal ────────────────────────────────────────────────────────────────
+function AdsModal({ visible, ads, onClose }) {
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const btnOpacity = useRef(new Animated.Value(0)).current;
+  const [countdown, setCountdown] = useState(3);
+  const countdownRef = useRef(null);
+
+  // Auto-detect ukuran gambar
+  const [imgRatio, setImgRatio] = useState(1);
+  const cardWidth = SCREEN_WIDTH - 56;
+  const MAX_HEIGHT = Dimensions.get('window').height * 0.75;
+  const imgHeight = Math.min(cardWidth / imgRatio, MAX_HEIGHT);
+
+  useEffect(() => {
+    if (ads?.[0]?.image) {
+      Image.getSize(
+        ads[0].image,
+        (w, h) => setImgRatio(w / h),
+        () => setImgRatio(1),
+      );
+    }
+  }, [ads]);
+
+  useEffect(() => {
+    if (visible) {
+      setCountdown(3);
+
+      // Animasi masuk
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          damping: 16,
+          stiffness: 220,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Countdown 3 detik sebelum tombol close muncul
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownRef.current);
+            Animated.timing(btnOpacity, {
+              toValue: 1,
+              duration: 250,
+              useNativeDriver: true,
+            }).start();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      scaleAnim.setValue(0.85);
+      opacityAnim.setValue(0);
+      btnOpacity.setValue(0);
+    }
+
+    return () => clearInterval(countdownRef.current);
+  }, [visible]);
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.85,
+        useNativeDriver: true,
+        damping: 14,
+        stiffness: 240,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onClose());
+  };
+
+  if (!ads?.length) return null;
+
+  const ad = ads[0];
+
   return (
-    <View
-      style={[
-        styles.statPill,
-        {
-          backgroundColor: `${colors.primary}`,
-          borderColor: `${colors.primary}`,
-        },
-      ]}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={handleClose}
     >
-      <Text style={{ fontSize: 18 }}>{icon}</Text>
-      <View style={{ marginLeft: 8 }}>
-        <Text
-          style={[
-            typography.small,
-            { color: colors.textSecondary, fontSize: 10 },
-          ]}
+      <Animated.View style={[styles.adsBackdrop, { opacity: opacityAnim }]}>
+        {/* Backdrop tap — hanya bisa tutup kalau countdown habis */}
+        {countdown === 0 && (
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={handleClose}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
+
+        <Animated.View
+          style={[styles.adsCard, { transform: [{ scale: scaleAnim }] }]}
         >
-          {label}
-        </Text>
-        <Text
-          style={[
-            typography.small,
-            { color: colors.text, fontWeight: '800', fontSize: 13 },
-          ]}
-        >
-          {value}
-        </Text>
-      </View>
-    </View>
+          {/* Gambar iklan */}
+          <Image
+            source={{ uri: ad.image }}
+            style={[styles.adsImage, { height: imgHeight }]}
+            resizeMode="contain"
+          />
+
+          {/* Tombol close — muncul setelah countdown */}
+          <Animated.View style={[styles.closeWrap, { opacity: btnOpacity }]}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleClose}
+              style={styles.closeBtn}
+            >
+              <X size={16} color="#fff" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Countdown badge — tampil selama hitung mundur */}
+          {countdown > 0 && (
+            <View style={styles.countdownBadge}>
+              <Text style={styles.countdownText}>{countdown}</Text>
+            </View>
+          )}
+        </Animated.View>
+      </Animated.View>
+    </Modal>
   );
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { colors, spacing, typography } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const user = useUserStore(state => state.user);
@@ -204,6 +310,9 @@ export default function HomeScreen() {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [ads, setAds] = useState([]);
+  const [adsVisible, setAdsVisible] = useState(false);
+
   const mentorScrollRef = useRef(null);
   const moduleScrollRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -211,9 +320,28 @@ export default function HomeScreen() {
   const [mentorDirection, setMentorDirection] = useState(1);
   const [moduleDirection, setModuleDirection] = useState(1);
 
-  // Fade-in for entire page
   const pageOpacity = useRef(new Animated.Value(0)).current;
   const pageTranslateY = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    checkActiveTryout();
+  }, []);
+
+  const checkActiveTryout = async () => {
+    try {
+      const raw = await AsyncStorage.getItem('ACTIVE_TRYOUT_SESSION');
+
+      if (!raw) return;
+
+      const session = JSON.parse(raw);
+
+      navigation.replace('TryoutQuestion', {
+        attemptToken: session.attemptToken,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -234,16 +362,27 @@ export default function HomeScreen() {
 
   const fetchData = async () => {
     try {
-      const [mRes, modRes] = await Promise.all([
+      const [mRes, modRes, adsRes] = await Promise.all([
         fetch(
-          'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/mentors.json',
+          'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/mentors.json',
         ),
         fetch(
-          'https://cdn.jsdelivr.net/gh/glgibran7/ukai-assets@main/modules.json',
+          'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/modules.json',
+        ),
+        fetch(
+          'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/ads.json',
         ),
       ]);
+
       setMentors(await mRes.json());
       setModules(await modRes.json());
+
+      const adsData = await adsRes.json();
+      if (adsData?.length) {
+        setAds(adsData);
+        // Tampilkan popup setelah data siap
+        setTimeout(() => setAdsVisible(true), 400);
+      }
     } catch (e) {
       console.log(e);
     } finally {
@@ -343,7 +482,7 @@ export default function HomeScreen() {
                 { color: colors.textSecondary, fontSize: 12 },
               ]}
             >
-              {greeting} 👋
+              {greeting}
             </Text>
             <Text
               numberOfLines={1}
@@ -363,7 +502,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* Date pill */}
           <View
             style={[
               styles.datePill,
@@ -417,7 +555,6 @@ export default function HomeScreen() {
                 { backgroundColor: colors.primary, marginBottom: spacing.lg },
               ]}
             >
-              {/* Decorative circles */}
               <View
                 style={[
                   styles.decCircle,
@@ -458,8 +595,6 @@ export default function HomeScreen() {
                       .replace(/\b\w/g, c => c.toUpperCase())}
                   </Text>
                 </View>
-
-                {/* Active badge */}
                 <View style={styles.activeBadge}>
                   <View style={styles.activeDot} />
                   <Text style={styles.activeText}>Aktif</Text>
@@ -493,7 +628,6 @@ export default function HomeScreen() {
               typography={typography}
               spacing={spacing}
             />
-
             {loading ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {[1, 2, 3].map(i => (
@@ -540,6 +674,7 @@ export default function HomeScreen() {
               </ScrollView>
             )}
           </View>
+
           {/* ── Modules ── */}
           <View style={{ marginBottom: spacing.xl }}>
             <SectionHeader
@@ -549,7 +684,6 @@ export default function HomeScreen() {
               typography={typography}
               spacing={spacing}
             />
-
             {loading ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {[1, 2].map(i => (
@@ -598,6 +732,13 @@ export default function HomeScreen() {
           </View>
         </Animated.ScrollView>
       </View>
+
+      {/* ── Ads Popup ── */}
+      <AdsModal
+        visible={adsVisible}
+        ads={ads}
+        onClose={() => setAdsVisible(false)}
+      />
     </AppLayout>
   );
 }
@@ -661,39 +802,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#4ADE80',
     marginRight: 5,
   },
-  activeText: {
-    fontSize: 11,
-    color: '#fff',
-    fontWeight: '700',
-  },
+  activeText: { fontSize: 11, color: '#fff', fontWeight: '700' },
   batchChip: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
   },
-  batchText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '700',
-  },
-  decCircle: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
+  batchText: { fontSize: 12, color: '#fff', fontWeight: '700' },
+  decCircle: { position: 'absolute', borderRadius: 999 },
   mentorCard: {
     width: MENTOR_CARD_WIDTH,
     height: MENTOR_CARD_WIDTH * 1.35,
@@ -705,11 +822,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
   },
-  mentorImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
+  mentorImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   moduleCard: {
     width: MODULE_CARD_WIDTH,
     height: MODULE_CARD_WIDTH * 1.35,
@@ -721,20 +834,61 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
   },
-  moduleImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  dots: {
-    flexDirection: 'row',
+  moduleImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+
+  // Ads
+  adsBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 4,
+    paddingHorizontal: 28,
   },
-  dot: {
-    height: 6,
-    borderRadius: 3,
+  adsCard: {
+    width: '100%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    elevation: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+  },
+  adsImage: {
+    width: '100%',
+  },
+  closeWrap: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  closeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  countdownBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  countdownText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

@@ -94,10 +94,9 @@ export default function TryoutScreen({ navigation }) {
       });
       return;
     }
-
-    navigation.navigate('TryoutResultDetail', {
-      resultId: item.id,
-      title: item.title,
+    navigation.navigate('TryoutHasilDetail', {
+      attemptToken: item.attempt_token,
+      title: item.nama_tryout,
     });
   };
 
@@ -302,12 +301,30 @@ export default function TryoutScreen({ navigation }) {
 
                   <Text
                     style={{
-                      color: '#F59E0B',
+                      color: colors.text,
                       fontSize: 11,
                       fontWeight: '700',
                     }}
                   >
                     {item.kosong} kosong
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      marginHorizontal: 6,
+                      fontSize: 10,
+                    }}
+                  >
+                    •
+                  </Text>
+                  <Text
+                    style={{
+                      color: '#F59E0B',
+                      fontSize: 11,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {item.kosong} Ragu
                   </Text>
                 </View>
 
