@@ -11,7 +11,7 @@ import {
   Modal,
   Dimensions,
   Linking,
-  Platform,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -282,48 +282,55 @@ function AdsModal({ visible, ads, onClose, bottomInset }) {
       animationType="none"
       onRequestClose={handleClose}
     >
-      <Animated.View
-        style={[
-          styles.adsBackdrop,
-          {
-            opacity: opacityAnim,
-            paddingBottom: bottomInset + 16,
-          },
-        ]}
-      >
+      <TouchableWithoutFeedback onPress={handleClose}>
         <Animated.View
-          style={[styles.adsWrapper, { transform: [{ scale: scaleAnim }] }]}
+          style={[
+            styles.adsBackdrop,
+            {
+              opacity: opacityAnim,
+              paddingBottom: bottomInset + 16,
+            },
+          ]}
         >
-          <TouchableOpacity
-            activeOpacity={0.92}
-            onPress={ad.link ? handleOpenLink : undefined}
-            disabled={!ad.link}
-            style={styles.adsCard}
-          >
-            <Image
-              source={{ uri: ad.image }}
-              style={[styles.adsImage, { height: imgHeight }]}
-              resizeMode="contain"
-            />
-
-            {countdown > 0 && (
-              <View style={styles.countdownBadge}>
-                <Text style={styles.countdownText}>{countdown}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <Animated.View style={[styles.closeWrap, { opacity: btnOpacity }]}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleClose}
-              style={styles.closeBtn}
+          {/* stop propagation agar tap di card tidak ikut close */}
+          <TouchableWithoutFeedback>
+            <Animated.View
+              style={[styles.adsWrapper, { transform: [{ scale: scaleAnim }] }]}
             >
-              <X size={18} color="#fff" strokeWidth={2.5} />
-            </TouchableOpacity>
-          </Animated.View>
+              <TouchableOpacity
+                activeOpacity={0.92}
+                onPress={ad.link ? handleOpenLink : undefined}
+                disabled={!ad.link}
+                style={styles.adsCard}
+              >
+                <Image
+                  source={{ uri: ad.image }}
+                  style={[styles.adsImage, { height: imgHeight }]}
+                  resizeMode="contain"
+                />
+
+                {countdown > 0 && (
+                  <View style={styles.countdownBadge}>
+                    <Text style={styles.countdownText}>{countdown}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <Animated.View
+                style={[styles.closeWrap, { opacity: btnOpacity }]}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleClose}
+                  style={styles.closeBtn}
+                >
+                  <X size={18} color="#fff" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </Animated.View>
+            </Animated.View>
+          </TouchableWithoutFeedback>
         </Animated.View>
-      </Animated.View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }

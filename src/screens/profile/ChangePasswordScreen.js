@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 
-import { ChevronLeft, House } from 'lucide-react-native';
-
+import { ChevronLeft, House, Eye, EyeOff } from 'lucide-react-native';
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
 
@@ -16,6 +15,9 @@ export default function ChangePasswordScreen({ navigation }) {
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -143,20 +145,39 @@ export default function ChangePasswordScreen({ navigation }) {
             Password Lama
           </Text>
 
-          <TextInput
-            value={oldPassword}
-            onChangeText={setOldPassword}
-            secureTextEntry
-            placeholder="Masukkan password lama"
-            placeholderTextColor={colors.textSecondary}
+          <View
             style={{
               borderWidth: 1,
               borderColor: colors.border,
               borderRadius: 12,
-              padding: 12,
-              color: colors.text,
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 12,
             }}
-          />
+          >
+            <TextInput
+              value={oldPassword}
+              onChangeText={setOldPassword}
+              secureTextEntry={!showOldPassword}
+              placeholder="Masukkan password lama"
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                color: colors.text,
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={() => setShowOldPassword(!showOldPassword)}
+            >
+              {showOldPassword ? (
+                <EyeOff size={20} color={colors.textSecondary} />
+              ) : (
+                <Eye size={20} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
         </AppCard>
 
         <AppCard style={{ marginBottom: spacing.sm }}>
@@ -169,20 +190,39 @@ export default function ChangePasswordScreen({ navigation }) {
             Password Baru
           </Text>
 
-          <TextInput
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-            placeholder="Masukkan password baru"
-            placeholderTextColor={colors.textSecondary}
+          <View
             style={{
               borderWidth: 1,
               borderColor: colors.border,
               borderRadius: 12,
-              padding: 12,
-              color: colors.text,
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 12,
             }}
-          />
+          >
+            <TextInput
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={!showNewPassword}
+              placeholder="Masukkan password baru"
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                color: colors.text,
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={() => setShowNewPassword(!showNewPassword)}
+            >
+              {showNewPassword ? (
+                <EyeOff size={20} color={colors.textSecondary} />
+              ) : (
+                <Eye size={20} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
         </AppCard>
 
         <AppCard style={{ marginBottom: spacing.md }}>
@@ -195,20 +235,39 @@ export default function ChangePasswordScreen({ navigation }) {
             Konfirmasi Password
           </Text>
 
-          <TextInput
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            placeholder="Ulangi password baru"
-            placeholderTextColor={colors.textSecondary}
+          <View
             style={{
               borderWidth: 1,
               borderColor: colors.border,
               borderRadius: 12,
-              padding: 12,
-              color: colors.text,
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 12,
             }}
-          />
+          >
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              placeholder="Ulangi password baru"
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                color: colors.text,
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff size={20} color={colors.textSecondary} />
+              ) : (
+                <Eye size={20} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
         </AppCard>
 
         {/* BUTTON */}
