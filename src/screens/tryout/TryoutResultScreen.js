@@ -233,42 +233,104 @@ export default function TryoutResultScreen({ route, navigation }) {
 
         {/* ── Buttons ── */}
         <Animated.View style={[styles.buttons, { opacity: fadeAnim }]}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() =>
-              navigation.reset({
-                index: 0,
-                routes: [
-                  { name: 'Tabs', state: { routes: [{ name: 'Tryout' }] } },
-                ],
-              })
-            }
-            style={[
-              styles.btnSecondary,
-              { borderColor: colors.border, backgroundColor: colors.card },
-            ]}
-          >
-            <Home size={18} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.btnSecondaryText, { color: colors.text }]}>
-              Kembali
-            </Text>
-          </TouchableOpacity>
+          {/* ── Buttons ── */}
+          <Animated.View style={[styles.buttonsWrap, { opacity: fadeAnim }]}>
+            {/* Row 1 */}
+            <View style={styles.buttons}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  navigation.reset({
+                    index: 0,
+                    routes: [
+                      {
+                        name: 'Tabs',
+                        state: {
+                          routes: [{ name: 'Tryout' }],
+                        },
+                      },
+                    ],
+                  })
+                }
+                style={[
+                  styles.btnSecondary,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.card,
+                  },
+                ]}
+              >
+                <Home size={18} color={colors.text} strokeWidth={2} />
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() =>
-              navigation.reset({
-                index: 0,
-                routes: [
-                  { name: 'Tabs', state: { routes: [{ name: 'Tryout' }] } },
-                ],
-              })
-            }
-            style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
-          >
-            <RotateCcw size={18} color="#fff" strokeWidth={2.2} />
-            <Text style={styles.btnPrimaryText}>Coba Lagi</Text>
-          </TouchableOpacity>
+                <Text style={[styles.btnSecondaryText, { color: colors.text }]}>
+                  Kembali
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  navigation.reset({
+                    index: 0,
+                    routes: [
+                      {
+                        name: 'Tabs',
+                        state: {
+                          routes: [{ name: 'Tryout' }],
+                        },
+                      },
+                    ],
+                  })
+                }
+                style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
+              >
+                <RotateCcw size={18} color="#fff" strokeWidth={2.2} />
+
+                <Text style={styles.btnPrimaryText}>Coba Lagi</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Row 2 - Pembahasan */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'Tabs',
+                      state: {
+                        routes: [
+                          {
+                            name: 'Tryout',
+                            params: {
+                              initialTab: 'result',
+                              openAttemptToken: route?.params?.attemptToken,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                })
+              }
+              style={[
+                styles.btnPembahasan,
+                {
+                  backgroundColor: `${colors.primary}15`,
+                  borderColor: `${colors.primary}25`,
+                },
+              ]}
+            >
+              <CheckCircle size={18} color={colors.primary} strokeWidth={2.2} />
+
+              <Text
+                style={[styles.btnPembahasanText, { color: colors.primary }]}
+              >
+                Lihat Pembahasan
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </Animated.View>
       </ScrollView>
     </AppLayout>
@@ -452,6 +514,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     width: '100%',
+  },
+  buttonsWrap: {
+    width: '100%',
+    gap: 12,
+  },
+  btnPembahasan: {
+    width: '100%',
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  btnPembahasanText: {
+    fontWeight: '800',
+    fontSize: 14,
+  },
+
+  pembahasanButton: {
+    height: 54,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+
+  pembahasanText: {
+    fontWeight: '800',
+    fontSize: 14,
   },
   btnSecondary: {
     flex: 1,

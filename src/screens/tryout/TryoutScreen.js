@@ -27,14 +27,16 @@ const tabs = [
   { key: 'result', label: 'Hasil' },
 ];
 
-export default function TryoutScreen({ navigation }) {
+export default function TryoutScreen({ navigation, route }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [tab, setTab] = useState('tryout');
+  const initialTab = route?.params?.initialTab || 'tryout';
+
+  const [tab, setTab] = useState(initialTab);
   const [search, setSearch] = useState('');
 
   const [tryouts, setTryouts] = useState([]);
@@ -77,6 +79,23 @@ export default function TryoutScreen({ navigation }) {
       setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    const openAttemptToken = route?.params?.openAttemptToken;
+
+    if (tab === 'result' && openAttemptToken && results.length > 0) {
+      const found = results.find(
+        item => item.attempt_token === openAttemptToken,
+      );
+
+      if (found) {
+        navigation.navigate('TryoutHasilDetail', {
+          attemptToken: found.attempt_token,
+          title: found.nama_tryout,
+        });
+      }
+    }
+  }, [tab, results, route]);
 
   const activeData = useMemo(() => {
     const source = tab === 'tryout' ? tryouts : results;
