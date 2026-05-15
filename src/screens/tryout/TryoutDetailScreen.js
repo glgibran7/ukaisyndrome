@@ -46,7 +46,9 @@ export default function TryoutDetailScreen({ route, navigation }) {
   };
 
   const isDisabled =
-    tryout?.status === 'closed' || tryout?.status === 'upcoming';
+    tryout?.status === 'closed' ||
+    tryout?.status === 'upcoming' ||
+    tryout?.remaining_attempt === 0;
 
   const statusConfig = {
     ongoing: {
@@ -337,6 +339,8 @@ export default function TryoutDetailScreen({ route, navigation }) {
                     ? 'Belum Dimulai'
                     : tryout?.status === 'closed'
                     ? 'Tryout Ditutup'
+                    : tryout?.remaining_attempt === 0
+                    ? 'Percobaan Habis'
                     : 'Mulai Tryout'}
                 </Text>
 

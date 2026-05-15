@@ -381,14 +381,39 @@ export default function SplashScreen() {
       <Text
         style={{
           position: 'absolute',
-          bottom: 36,
+          bottom: 34,
+
           fontSize: 11,
+
           color: colors.textSecondary,
+
           letterSpacing: 0.8,
+
           opacity: 0.4,
         }}
       >
         v{DeviceInfo.getVersion()}
+      </Text>
+
+      <Text
+        style={{
+          position: 'absolute',
+          bottom: 12,
+
+          fontSize: 11,
+
+          color: colors.textSecondary,
+
+          opacity: 0.5,
+
+          textAlign: 'center',
+
+          lineHeight: 18,
+
+          letterSpacing: 0.3,
+        }}
+      >
+        © {new Date().getFullYear()} Outlook Project. All rights reserved.
       </Text>
     </View>
   );
