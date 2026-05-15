@@ -18,6 +18,10 @@ import {
   MinusCircle,
   Flag,
 } from 'lucide-react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 import AppLayout from '../../components/AppLayout';
@@ -235,362 +239,378 @@ export default function TryoutHasilDetailScreen({ route, navigation }) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <AppLayout>
-      <View style={{ flex: 1 }}>
-        {/* ── Header ── */}
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: colors.background,
-              borderBottomColor: colors.border,
-              paddingHorizontal: spacing.md,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.headerBack}
-          >
-            <ChevronLeft size={22} color={colors.text} />
-          </TouchableOpacity>
-
-          <View style={{ flex: 1 }}>
-            <Text
-              numberOfLines={1}
-              style={[styles.headerTitle, { color: colors.text }]}
-            >
-              {title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-            </Text>
-            <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
-              Review Jawaban
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() =>
-              navigation.reset({
-                index: 0,
-                routes: [
-                  { name: 'Tabs', state: { routes: [{ name: 'Tryout' }] } },
-                ],
-              })
-            }
-            style={[styles.homeBtn, { backgroundColor: `${colors.primary}14` }]}
-          >
-            <House size={18} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Navigasi soal trigger ── */}
-        <View
-          style={{
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.sm,
-            paddingBottom: spacing.xs ?? 6,
-          }}
-        >
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setPaletteVisible(true)}
-            style={[
-              styles.paletteButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <View>
-              <Text
-                style={[styles.paletteLabel, { color: colors.textSecondary }]}
-              >
-                Navigasi Soal
-              </Text>
-              <Text style={[styles.paletteValue, { color: colors.text }]}>
-                Soal {currentIndex + 1} dari {questions.length}
-              </Text>
-            </View>
-
-            {/* Status badge */}
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-            >
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: `${statusConfig.color}15` },
-                ]}
-              >
-                <StatusIcon
-                  size={12}
-                  color={statusConfig.color}
-                  strokeWidth={2.5}
-                />
-                <Text
-                  style={[
-                    styles.statusBadgeText,
-                    { color: statusConfig.color },
-                  ]}
-                >
-                  {statusConfig.label}
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.paletteBtn,
-                  { backgroundColor: `${colors.primary}15` },
-                ]}
-              >
-                <Text
-                  style={[styles.paletteBtnText, { color: colors.primary }]}
-                >
-                  Buka
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Konten soal ── */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: spacing.md,
-            paddingBottom: 120,
-          }}
-        >
-          {/* Nomor soal + flag ragu */}
-          <View style={styles.questionMeta}>
-            <View
-              style={[
-                styles.questionNumber,
-                { backgroundColor: `${colors.primary}14` },
-              ]}
-            >
-              <Text
-                style={[styles.questionNumberText, { color: colors.primary }]}
-              >
-                No. {currentQuestion?.nomor}
-              </Text>
-            </View>
-
-            {currentQuestion?.is_ragu && (
-              <View style={styles.raguBadge}>
-                <Flag size={11} color="#F59E0B" strokeWidth={2.5} />
-                <Text style={styles.raguText}>Ragu-ragu</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Pertanyaan */}
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
+        <View style={{ flex: 1 }}>
+          {/* ── Header ── */}
           <View
             style={[
-              styles.questionCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
+              styles.header,
+              {
+                backgroundColor: colors.background,
+                borderBottomColor: colors.border,
+                paddingHorizontal: spacing.md,
+              },
             ]}
           >
-            <HtmlRenderer
-              html={currentQuestion?.pertanyaan ?? ''}
-              colors={colors}
-            />
-          </View>
-
-          {/* Pilihan jawaban */}
-          <View style={{ marginTop: spacing.sm }}>
-            {OPTIONS.map(option => {
-              const text = currentQuestion?.pilihan?.[option];
-              if (!text) return null;
-
-              const isCorrect = currentQuestion?.correct_answer === option;
-              const isUserAnswer = currentQuestion?.user_answer === option;
-
-              return (
-                <OptionItem
-                  key={option}
-                  option={option}
-                  text={text}
-                  isCorrect={isCorrect}
-                  isUserAnswer={isUserAnswer}
-                  colors={colors}
-                />
-              );
-            })}
-          </View>
-
-          {/* Jawaban kamu vs jawaban benar */}
-          <View
-            style={[
-              styles.answerSummary,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <View style={styles.answerRow}>
-              <Text
-                style={[styles.answerLabel, { color: colors.textSecondary }]}
-              >
-                Jawaban kamu
-              </Text>
-              <Text
-                style={[
-                  styles.answerValue,
-                  {
-                    color: currentQuestion?.user_answer
-                      ? currentQuestion?.status === 'benar'
-                        ? '#22C55E'
-                        : '#EF4444'
-                      : '#9CA3AF',
-                  },
-                ]}
-              >
-                {currentQuestion?.user_answer || '—'}
-              </Text>
-            </View>
-            <View
-              style={[styles.answerDivider, { backgroundColor: colors.border }]}
-            />
-            <View style={styles.answerRow}>
-              <Text
-                style={[styles.answerLabel, { color: colors.textSecondary }]}
-              >
-                Jawaban benar
-              </Text>
-              <Text style={[styles.answerValue, { color: '#22C55E' }]}>
-                {currentQuestion?.correct_answer}
-              </Text>
-            </View>
-          </View>
-
-          {/* Pembahasan */}
-          {currentQuestion?.pembahasan ? (
-            <View
-              style={[
-                styles.pembahasanCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setPembahasanExpanded(prev => !prev)}
-                style={styles.pembahasanHeader}
-              >
-                <Text style={[styles.pembahasanTitle, { color: colors.text }]}>
-                  Pembahasan
-                </Text>
-                <Text
-                  style={{
-                    color: colors.primary,
-                    fontSize: 12,
-                    fontWeight: '700',
-                  }}
-                >
-                  {pembahasanExpanded ? 'Tutup' : 'Lihat'}
-                </Text>
-              </TouchableOpacity>
-
-              {pembahasanExpanded && (
-                <View style={{ marginTop: 8 }}>
-                  <HtmlRenderer
-                    html={currentQuestion.pembahasan}
-                    colors={colors}
-                  />
-                </View>
-              )}
-            </View>
-          ) : (
-            <View
-              style={[
-                styles.pembahasanCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.pembahasanTitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                Tidak ada pembahasan
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* ── Footer navigasi ── */}
-        <View
-          style={[
-            styles.footer,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-              paddingHorizontal: spacing.md,
-              paddingBottom: spacing.md,
-              paddingTop: spacing.sm,
-            },
-          ]}
-        >
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {/* Prev */}
             <TouchableOpacity
-              disabled={currentIndex === 0}
-              onPress={() => setCurrentIndex(prev => prev - 1)}
-              style={[
-                styles.navBtn,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  opacity: currentIndex === 0 ? 0.4 : 1,
-                },
-              ]}
+              onPress={() => navigation.goBack()}
+              style={styles.headerBack}
             >
               <ChevronLeft size={22} color={colors.text} />
             </TouchableOpacity>
 
-            {/* Next / Selesai */}
-            {isLastQuestion ? (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => navigation.goBack()}
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={[styles.headerTitle, { color: colors.text }]}
+              >
+                {title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+              </Text>
+              <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
+                Review Jawaban
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() =>
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    { name: 'Tabs', state: { routes: [{ name: 'Tryout' }] } },
+                  ],
+                })
+              }
+              style={[
+                styles.homeBtn,
+                { backgroundColor: `${colors.primary}14` },
+              ]}
+            >
+              <House size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Navigasi soal trigger ── */}
+          <View
+            style={{
+              paddingHorizontal: spacing.md,
+              paddingTop: spacing.sm,
+              paddingBottom: spacing.xs ?? 6,
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setPaletteVisible(true)}
+              style={[
+                styles.paletteButton,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <View>
+                <Text
+                  style={[styles.paletteLabel, { color: colors.textSecondary }]}
+                >
+                  Navigasi Soal
+                </Text>
+                <Text style={[styles.paletteValue, { color: colors.text }]}>
+                  Soal {currentIndex + 1} dari {questions.length}
+                </Text>
+              </View>
+
+              {/* Status badge */}
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              >
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: `${statusConfig.color}15` },
+                  ]}
+                >
+                  <StatusIcon
+                    size={12}
+                    color={statusConfig.color}
+                    strokeWidth={2.5}
+                  />
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      { color: statusConfig.color },
+                    ]}
+                  >
+                    {statusConfig.label}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.paletteBtn,
+                    { backgroundColor: `${colors.primary}15` },
+                  ]}
+                >
+                  <Text
+                    style={[styles.paletteBtnText, { color: colors.primary }]}
+                  >
+                    Buka
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Konten soal ── */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.md,
+              paddingBottom: 120,
+            }}
+          >
+            {/* Nomor soal + flag ragu */}
+            <View style={styles.questionMeta}>
+              <View
                 style={[
-                  styles.navBtnPrimary,
-                  { backgroundColor: colors.primary },
+                  styles.questionNumber,
+                  { backgroundColor: `${colors.primary}14` },
                 ]}
               >
-                <Text style={styles.navBtnPrimaryText}>Selesai Review</Text>
-              </TouchableOpacity>
+                <Text
+                  style={[styles.questionNumberText, { color: colors.primary }]}
+                >
+                  No. {currentQuestion?.nomor}
+                </Text>
+              </View>
+
+              {currentQuestion?.is_ragu && (
+                <View style={styles.raguBadge}>
+                  <Flag size={11} color="#F59E0B" strokeWidth={2.5} />
+                  <Text style={styles.raguText}>Ragu-ragu</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Pertanyaan */}
+            <View
+              style={[
+                styles.questionCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <HtmlRenderer
+                html={currentQuestion?.pertanyaan ?? ''}
+                colors={colors}
+              />
+            </View>
+
+            {/* Pilihan jawaban */}
+            <View style={{ marginTop: spacing.sm }}>
+              {OPTIONS.map(option => {
+                const text = currentQuestion?.pilihan?.[option];
+                if (!text) return null;
+
+                const isCorrect = currentQuestion?.correct_answer === option;
+                const isUserAnswer = currentQuestion?.user_answer === option;
+
+                return (
+                  <OptionItem
+                    key={option}
+                    option={option}
+                    text={text}
+                    isCorrect={isCorrect}
+                    isUserAnswer={isUserAnswer}
+                    colors={colors}
+                  />
+                );
+              })}
+            </View>
+
+            {/* Jawaban kamu vs jawaban benar */}
+            <View
+              style={[
+                styles.answerSummary,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.answerRow}>
+                <Text
+                  style={[styles.answerLabel, { color: colors.textSecondary }]}
+                >
+                  Jawaban kamu
+                </Text>
+                <Text
+                  style={[
+                    styles.answerValue,
+                    {
+                      color: currentQuestion?.user_answer
+                        ? currentQuestion?.status === 'benar'
+                          ? '#22C55E'
+                          : '#EF4444'
+                        : '#9CA3AF',
+                    },
+                  ]}
+                >
+                  {currentQuestion?.user_answer || '—'}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.answerDivider,
+                  { backgroundColor: colors.border },
+                ]}
+              />
+              <View style={styles.answerRow}>
+                <Text
+                  style={[styles.answerLabel, { color: colors.textSecondary }]}
+                >
+                  Jawaban benar
+                </Text>
+                <Text style={[styles.answerValue, { color: '#22C55E' }]}>
+                  {currentQuestion?.correct_answer}
+                </Text>
+              </View>
+            </View>
+
+            {/* Pembahasan */}
+            {currentQuestion?.pembahasan ? (
+              <View
+                style={[
+                  styles.pembahasanCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setPembahasanExpanded(prev => !prev)}
+                  style={styles.pembahasanHeader}
+                >
+                  <Text
+                    style={[styles.pembahasanTitle, { color: colors.text }]}
+                  >
+                    Pembahasan
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.primary,
+                      fontSize: 12,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {pembahasanExpanded ? 'Tutup' : 'Lihat'}
+                  </Text>
+                </TouchableOpacity>
+
+                {pembahasanExpanded && (
+                  <View style={{ marginTop: 8 }}>
+                    <HtmlRenderer
+                      html={currentQuestion.pembahasan}
+                      colors={colors}
+                    />
+                  </View>
+                )}
+              </View>
             ) : (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setCurrentIndex(prev => prev + 1)}
+              <View
                 style={[
-                  styles.navBtnPrimary,
-                  { backgroundColor: colors.primary },
+                  styles.pembahasanCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
               >
-                <Text style={styles.navBtnPrimaryText}>Soal Berikutnya</Text>
-              </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.pembahasanTitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Tidak ada pembahasan
+                </Text>
+              </View>
             )}
+          </ScrollView>
+
+          {/* ── Footer navigasi ── */}
+          <View
+            style={[
+              styles.footer,
+              {
+                backgroundColor: colors.background,
+                borderTopColor: colors.border,
+                paddingHorizontal: spacing.md,
+                paddingBottom: spacing.md,
+                paddingTop: spacing.sm,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* Prev */}
+              <TouchableOpacity
+                disabled={currentIndex === 0}
+                onPress={() => setCurrentIndex(prev => prev - 1)}
+                style={[
+                  styles.navBtn,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    opacity: currentIndex === 0 ? 0.4 : 1,
+                  },
+                ]}
+              >
+                <ChevronLeft size={22} color={colors.text} />
+              </TouchableOpacity>
+
+              {/* Next / Selesai */}
+              {isLastQuestion ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => navigation.goBack()}
+                  style={[
+                    styles.navBtnPrimary,
+                    { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <Text style={styles.navBtnPrimaryText}>Selesai Review</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setCurrentIndex(prev => prev + 1)}
+                  style={[
+                    styles.navBtnPrimary,
+                    { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <Text style={styles.navBtnPrimaryText}>Soal Berikutnya</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* ── MODAL PALETTE ── */}
-      <QuestionPaletteModal
-        visible={paletteVisible}
-        onClose={() => setPaletteVisible(false)}
-        questions={questions}
-        currentIndex={currentIndex}
-        mode="pembahasan"
-        onSelect={index => setCurrentIndex(index)}
-        answers={Object.fromEntries(
-          questions.map(item => [
-            item.id,
-            {
-              answer: item.user_answer,
-              ragu: item.is_ragu,
-            },
-          ]),
-        )}
-      />
-    </AppLayout>
+        {/* ── MODAL PALETTE ── */}
+        <QuestionPaletteModal
+          visible={paletteVisible}
+          onClose={() => setPaletteVisible(false)}
+          questions={questions}
+          currentIndex={currentIndex}
+          mode="pembahasan"
+          onSelect={index => setCurrentIndex(index)}
+          answers={Object.fromEntries(
+            questions.map(item => [
+              item.id,
+              {
+                answer: item.user_answer,
+                ragu: item.is_ragu,
+              },
+            ]),
+          )}
+        />
+      </AppLayout>
+    </SafeAreaView>
   );
 }
 

@@ -17,6 +17,7 @@ import {
   Animated,
   BackHandler,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -231,6 +232,7 @@ export default function TryoutQuestionScreen({ route, navigation }) {
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [submitVisible, setSubmitVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [endTime, setEndTime] = useState(null);
   const [remainingTime, setRemainingTime] = useState(0);
@@ -314,6 +316,20 @@ export default function TryoutQuestionScreen({ route, navigation }) {
       showToast(error?.message || 'Gagal memuat soal tryout', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+
+      await loadQuestions();
+
+      showToast('Soal berhasil diperbarui', 'success');
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -439,7 +455,7 @@ export default function TryoutQuestionScreen({ route, navigation }) {
     return (
       <AppLayout>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="small" color="#0000FF " />
+          <ActivityIndicator size="small" color={colors.primary} />
         </View>
       </AppLayout>
     );
@@ -508,6 +524,14 @@ export default function TryoutQuestionScreen({ route, navigation }) {
           {/* CONTENT */}
           <ScrollView
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[colors.primary]}
+                tintColor={colors.primary}
+              />
+            }
             contentContainerStyle={{
               paddingHorizontal: spacing.md,
               paddingBottom: 140,

@@ -673,7 +673,7 @@ export default function HomeScreen({ navigation }) {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.classLabel}>Kelas Aktif</Text>
+                  <Text style={styles.classLabel}>Kelas</Text>
 
                   <Text style={styles.className} numberOfLines={2}>
                     {user.classes[0].name

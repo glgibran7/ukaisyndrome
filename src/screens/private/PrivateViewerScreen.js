@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { ChevronLeft, House } from 'lucide-react-native';
+import { ChevronLeft, House, Download } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -25,7 +25,8 @@ function transformGoogleDriveUrl(url) {
 }
 
 export default function PrivateViewerScreen({ route, navigation }) {
-  const { title, url } = route.params;
+  const { title, url, is_downloadable } = route.params;
+  console.log('DOWNLOADABLE:', is_downloadable);
 
   const { colors, spacing, typography } = useTheme();
   const user = useUserStore(state => state.user);
@@ -89,6 +90,23 @@ export default function PrivateViewerScreen({ route, navigation }) {
                 .replace(/\b\w/g, char => char.toUpperCase())}
             </Text>{' '}
           </Text>
+
+          {Number(is_downloadable) === 1 && (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(url)}
+              style={{
+                marginLeft: spacing.sm,
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: `${colors.primary}14`,
+              }}
+            >
+              <Download size={18} color={colors.primary} />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={() =>

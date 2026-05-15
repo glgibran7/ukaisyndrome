@@ -17,6 +17,10 @@ import {
   KeyRound,
   ChevronRight,
 } from 'lucide-react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
@@ -45,6 +49,7 @@ const getInitials = (name = '') =>
 export default function ProfileScreen() {
   const { colors, spacing, typography } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const user = useUserStore(state => state.user);
   const logout = useUserStore(state => state.logout);
@@ -116,314 +121,324 @@ export default function ProfileScreen() {
   );
 
   return (
-    <AppLayout>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: spacing.md }}
-      >
-        {/* ================= HEADER PROFILE ================= */}
-        <AppCard
-          style={{
-            alignItems: 'center',
-            paddingVertical: spacing.lg,
-            marginBottom: spacing.md,
-          }}
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingBottom: 20 + insets.bottom,
+      }}
+    >
+      <AppLayout>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: spacing.md }}
         >
-          <View
+          {/* ================= HEADER PROFILE ================= */}
+          <AppCard
             style={{
-              width: 72,
-              height: 72,
-              borderRadius: 999,
               alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: stringToColor(user?.name),
-              marginBottom: spacing.sm,
-              elevation: 6,
+              paddingVertical: spacing.lg,
+              marginBottom: spacing.md,
             }}
           >
-            <Text style={{ fontSize: 26, fontWeight: '800', color: '#fff' }}>
-              {getInitials(user?.name)}
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 999,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: stringToColor(user?.name),
+                marginBottom: spacing.sm,
+                elevation: 6,
+              }}
+            >
+              <Text style={{ fontSize: 26, fontWeight: '800', color: '#fff' }}>
+                {getInitials(user?.name)}
+              </Text>
+            </View>
+
+            <Text style={[typography.h2, { color: colors.text }]}>
+              {user?.name || 'Peserta'}
             </Text>
-          </View>
 
-          <Text style={[typography.h2, { color: colors.text }]}>
-            {user?.name || 'Peserta'}
-          </Text>
-
-          <Text
-            style={{
-              color: colors.textSecondary,
-              marginTop: 4,
-              textTransform: 'capitalize',
-            }}
-          >
-            {user?.role || '-'}
-          </Text>
-        </AppCard>
-
-        <Text
-          style={[
-            typography.body,
-            {
-              color: colors.text,
-              fontWeight: '700',
-              marginBottom: spacing.sm,
-              marginLeft: 2,
-            },
-          ]}
-        >
-          Informasi Pribadi
-        </Text>
-
-        {/* ================= INFO SECTION (NO STACKED CARDS) ================= */}
-        <AppCard style={{ marginBottom: spacing.md }}>
-          <Row
-            icon={<Mail size={18} color={colors.primary} />}
-            label="Email"
-            value={user?.email || '-'}
-          />
-
-          <View
-            style={{
-              height: 1,
-              backgroundColor: 'rgba(255,255,255,0.05)',
-            }}
-          />
-
-          <Row
-            icon={<Layers size={18} color={colors.primary} />}
-            label="Kelas"
-            value={
-              activeClass?.name?.replace(/\b\w/g, c => c.toUpperCase()) || '-'
-            }
-          />
+            <Text
+              style={{
+                color: colors.textSecondary,
+                marginTop: 4,
+                textTransform: 'capitalize',
+              }}
+            >
+              {user?.role || '-'}
+            </Text>
+          </AppCard>
 
           <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 12,
-              marginLeft: 30,
-              marginTop: -6,
-              marginBottom: 8,
-            }}
+            style={[
+              typography.body,
+              {
+                color: colors.text,
+                fontWeight: '700',
+                marginBottom: spacing.sm,
+                marginLeft: 2,
+              },
+            ]}
           >
-            {activeClass?.batch?.replace(/\b\w/g, c => c.toUpperCase()) || '-'}
+            Informasi Pribadi
           </Text>
 
-          <View
-            style={{
-              height: 1,
-              backgroundColor: 'rgba(255,255,255,0.05)',
-            }}
-          />
+          {/* ================= INFO SECTION (NO STACKED CARDS) ================= */}
+          <AppCard style={{ marginBottom: spacing.md }}>
+            <Row
+              icon={<Mail size={18} color={colors.primary} />}
+              label="Email"
+              value={user?.email || '-'}
+            />
 
-          <Row
-            icon={<Shield size={18} color={colors.primary} />}
-            label="Role"
-            value={user?.role?.replace(/\b\w/g, c => c.toUpperCase()) || '-'}
-          />
-        </AppCard>
+            <View
+              style={{
+                height: 1,
+                backgroundColor: 'rgba(255,255,255,0.05)',
+              }}
+            />
 
-        <Text
-          style={[
-            typography.body,
-            {
-              color: colors.text,
-              fontWeight: '700',
-              marginBottom: spacing.sm,
-              marginLeft: 2,
-            },
-          ]}
-        >
-          Pengaturan
-        </Text>
+            <Row
+              icon={<Layers size={18} color={colors.primary} />}
+              label="Kelas"
+              value={
+                activeClass?.name?.replace(/\b\w/g, c => c.toUpperCase()) || '-'
+              }
+            />
 
-        {/* ================= ACTION SECTION ================= */}
-        <AppCard style={{ marginBottom: spacing.md }}>
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                marginLeft: 30,
+                marginTop: -6,
+                marginBottom: 8,
+              }}
+            >
+              {activeClass?.batch?.replace(/\b\w/g, c => c.toUpperCase()) ||
+                '-'}
+            </Text>
+
+            <View
+              style={{
+                height: 1,
+                backgroundColor: 'rgba(255,255,255,0.05)',
+              }}
+            />
+
+            <Row
+              icon={<Shield size={18} color={colors.primary} />}
+              label="Role"
+              value={user?.role?.replace(/\b\w/g, c => c.toUpperCase()) || '-'}
+            />
+          </AppCard>
+
+          <Text
+            style={[
+              typography.body,
+              {
+                color: colors.text,
+                fontWeight: '700',
+                marginBottom: spacing.sm,
+                marginLeft: 2,
+              },
+            ]}
+          >
+            Pengaturan
+          </Text>
+
+          {/* ================= ACTION SECTION ================= */}
+          <AppCard style={{ marginBottom: spacing.md }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ChangePassword')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <KeyRound size={18} color={colors.primary} />
+                <Text
+                  style={{
+                    marginLeft: spacing.sm,
+                    color: colors.text,
+                    fontWeight: '600',
+                  }}
+                >
+                  Ganti Password
+                </Text>
+              </View>
+
+              <ChevronRight size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </AppCard>
+
+          {/* ================= LOGOUT ================= */}
           <TouchableOpacity
-            onPress={() => navigation.navigate('ChangePassword')}
+            onPress={() => setLogoutVisible(true)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'center',
+              backgroundColor: '#EF4444',
+              paddingVertical: spacing.md,
+              borderRadius: 12,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <KeyRound size={18} color={colors.primary} />
-              <Text
-                style={{
-                  marginLeft: spacing.sm,
-                  color: colors.text,
-                  fontWeight: '600',
-                }}
-              >
-                Ganti Password
-              </Text>
-            </View>
-
-            <ChevronRight size={18} color={colors.textSecondary} />
+            <LogOut size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', marginLeft: 8 }}>
+              Logout
+            </Text>
           </TouchableOpacity>
-        </AppCard>
-
-        {/* ================= LOGOUT ================= */}
-        <TouchableOpacity
-          onPress={() => setLogoutVisible(true)}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#EF4444',
-            paddingVertical: spacing.md,
-            borderRadius: 12,
-          }}
+        </ScrollView>
+        <Modal
+          visible={logoutVisible}
+          transparent
+          animationType="fade"
+          statusBarTranslucent
         >
-          <LogOut size={18} color="#fff" />
-          <Text style={{ color: '#fff', fontWeight: '700', marginLeft: 8 }}>
-            Logout
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-      <Modal
-        visible={logoutVisible}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: spacing.lg,
-          }}
-        >
-          {/* tap outside */}
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => {
-              if (!logoutLoading) {
-                setLogoutVisible(false);
-              }
-            }}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          />
-
           <View
             style={{
-              width: '100%',
-              maxWidth: 360,
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.45)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: spacing.lg,
             }}
           >
-            {/* CARD */}
+            {/* tap outside */}
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {
+                if (!logoutLoading) {
+                  setLogoutVisible(false);
+                }
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+            />
+
             <View
               style={{
-                backgroundColor: colors.card || colors.background,
-                borderRadius: 24,
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.xl,
-                paddingBottom: spacing.lg,
-                borderWidth: 1,
-                borderColor: colors.border,
+                width: '100%',
+                maxWidth: 360,
               }}
             >
-              <Text
-                style={{
-                  color: colors.text,
-                  fontSize: 20,
-                  fontWeight: '800',
-                  textAlign: 'center',
-                  marginBottom: 10,
-                }}
-              >
-                Logout
-              </Text>
-
-              <Text
-                style={{
-                  color: colors.textSecondary,
-                  fontSize: 14,
-                  lineHeight: 22,
-                  textAlign: 'center',
-                  marginBottom: spacing.xl,
-                }}
-              >
-                Apakah kamu yakin ingin keluar dari akun ini?
-              </Text>
-
-              {/* ACTIONS */}
+              {/* CARD */}
               <View
                 style={{
-                  flexDirection: 'row',
-                  gap: 10,
+                  backgroundColor: colors.card || colors.background,
+                  borderRadius: 24,
+                  paddingHorizontal: spacing.lg,
+                  paddingTop: spacing.xl,
+                  paddingBottom: spacing.lg,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                 }}
               >
-                {/* CANCEL */}
-                <TouchableOpacity
-                  disabled={logoutLoading}
-                  onPress={() => setLogoutVisible(false)}
-                  activeOpacity={0.85}
+                <Text
                   style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    paddingVertical: 14,
-                    borderRadius: 14,
-                    alignItems: 'center',
-                    backgroundColor: colors.background,
+                    color: colors.text,
+                    fontSize: 20,
+                    fontWeight: '800',
+                    textAlign: 'center',
+                    marginBottom: 10,
                   }}
                 >
-                  <Text
+                  Logout
+                </Text>
+
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                    lineHeight: 22,
+                    textAlign: 'center',
+                    marginBottom: spacing.xl,
+                  }}
+                >
+                  Apakah kamu yakin ingin keluar dari akun ini?
+                </Text>
+
+                {/* ACTIONS */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: 10,
+                  }}
+                >
+                  {/* CANCEL */}
+                  <TouchableOpacity
+                    disabled={logoutLoading}
+                    onPress={() => setLogoutVisible(false)}
+                    activeOpacity={0.85}
                     style={{
-                      color: colors.text,
-                      fontWeight: '700',
-                      fontSize: 14,
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      paddingVertical: 14,
+                      borderRadius: 14,
+                      alignItems: 'center',
+                      backgroundColor: colors.background,
                     }}
                   >
-                    Batal
-                  </Text>
-                </TouchableOpacity>
-
-                {/* LOGOUT */}
-                <TouchableOpacity
-                  disabled={logoutLoading}
-                  onPress={handleLogout}
-                  activeOpacity={0.85}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#EF4444',
-                    paddingVertical: 14,
-                    borderRadius: 14,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: logoutLoading ? 0.8 : 1,
-                  }}
-                >
-                  {logoutLoading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
                     <Text
                       style={{
-                        color: '#fff',
-                        fontSize: 14,
+                        color: colors.text,
                         fontWeight: '700',
+                        fontSize: 14,
                       }}
                     >
-                      Logout
+                      Batal
                     </Text>
-                  )}
-                </TouchableOpacity>
+                  </TouchableOpacity>
+
+                  {/* LOGOUT */}
+                  <TouchableOpacity
+                    disabled={logoutLoading}
+                    onPress={handleLogout}
+                    activeOpacity={0.85}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#EF4444',
+                      paddingVertical: 14,
+                      borderRadius: 14,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: logoutLoading ? 0.8 : 1,
+                    }}
+                  >
+                    {logoutLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 14,
+                          fontWeight: '700',
+                        }}
+                      >
+                        Logout
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </AppLayout>
+        </Modal>
+      </AppLayout>
+    </SafeAreaView>
   );
 }

@@ -18,6 +18,10 @@ import {
   ExternalLink,
   House,
 } from 'lucide-react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
@@ -97,6 +101,7 @@ export default function MateriDetailScreen({ route, navigation }) {
     navigation.navigate('MateriViewer', {
       title: item.title,
       url: item.url,
+      is_downloadable: item.is_downloadable,
     });
   };
 
@@ -206,192 +211,200 @@ export default function MateriDetailScreen({ route, navigation }) {
   };
 
   return (
-    <AppLayout>
-      <View
-        style={{
-          flex: 1,
-          paddingTop: spacing.md,
-          paddingHorizontal: spacing.md,
-        }}
-      >
-        {/* Header */}
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
         <View
           style={{
-            marginBottom: spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
+            flex: 1,
+            paddingTop: spacing.md,
+            paddingHorizontal: spacing.md,
           }}
         >
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{
-              marginRight: spacing.sm,
-              padding: 4,
-            }}
-          >
-            <ChevronLeft size={22} color={colors.text} />
-          </TouchableOpacity>
-
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[
-                typography.small,
-                {
-                  color: colors.textSecondary,
-                },
-              ]}
-            >
-              Isi materi
-            </Text>
-
-            <Text
-              numberOfLines={2}
-              style={[
-                typography.h3,
-                {
-                  color: colors.text,
-                  marginTop: 2,
-                },
-              ]}
-            >
-              {modulTitle}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() =>
-              navigation.reset({
-                index: 0,
-                routes: [
-                  {
-                    name: 'Tabs',
-                    state: {
-                      routes: [{ name: 'Home' }],
-                    },
-                  },
-                ],
-              })
-            }
-            style={{
-              marginLeft: spacing.sm,
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: `${colors.primary}14`,
-              borderWidth: 1,
-              borderColor: `${colors.primary}25`,
-            }}
-          >
-            <House size={18} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Search */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.card || colors.background,
-            borderRadius: 16,
-            paddingHorizontal: 14,
-            marginBottom: spacing.sm,
-          }}
-        >
-          <Search size={18} color={colors.textSecondary} />
-
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Cari materi..."
-            placeholderTextColor={colors.textSecondary}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 10,
-              color: colors.text,
-              fontSize: 14,
-            }}
-          />
-        </View>
-
-        {/* Tabs */}
-        <View
-          style={{
-            flexDirection: 'row',
-            padding: 4,
-            borderRadius: 16,
-            backgroundColor: colors.card || colors.background,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: spacing.md,
-          }}
-        >
-          {tabs.map(renderTab)}
-        </View>
-
-        <Text
-          style={[
-            typography.small,
-            {
-              color: colors.textSecondary,
-              marginBottom: spacing.md,
-            },
-          ]}
-        >
-          {filteredMaterials.length} materi tersedia
-        </Text>
-
-        {loading ? (
+          {/* Header */}
           <View
             style={{
-              flex: 1,
+              marginBottom: spacing.md,
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
             }}
           >
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : (
-          <FlatList
-            data={filteredMaterials}
-            keyExtractor={item => String(item.id)}
-            renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <View
-                style={{
-                  paddingTop: spacing.xl,
-                  alignItems: 'center',
-                }}
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{
+                marginRight: spacing.sm,
+                padding: 4,
+              }}
+            >
+              <ChevronLeft size={22} color={colors.text} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  typography.small,
+                  {
+                    color: colors.textSecondary,
+                  },
+                ]}
               >
-                <Text
-                  style={[
-                    typography.small,
+                Isi materi
+              </Text>
+
+              <Text
+                numberOfLines={2}
+                style={[
+                  typography.h3,
+                  {
+                    color: colors.text,
+                    marginTop: 2,
+                  },
+                ]}
+              >
+                {modulTitle}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.reset({
+                  index: 0,
+                  routes: [
                     {
-                      color: colors.textSecondary,
+                      name: 'Tabs',
+                      state: {
+                        routes: [{ name: 'Home' }],
+                      },
                     },
-                  ]}
+                  ],
+                })
+              }
+              style={{
+                marginLeft: spacing.sm,
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: `${colors.primary}14`,
+                borderWidth: 1,
+                borderColor: `${colors.primary}25`,
+              }}
+            >
+              <House size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.card || colors.background,
+              borderRadius: 16,
+              paddingHorizontal: 14,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <Search size={18} color={colors.textSecondary} />
+
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Cari materi..."
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+                color: colors.text,
+                fontSize: 14,
+              }}
+            />
+          </View>
+
+          {/* Tabs */}
+          <View
+            style={{
+              flexDirection: 'row',
+              padding: 4,
+              borderRadius: 16,
+              backgroundColor: colors.card || colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: spacing.md,
+            }}
+          >
+            {tabs.map(renderTab)}
+          </View>
+
+          <Text
+            style={[
+              typography.small,
+              {
+                color: colors.textSecondary,
+                marginBottom: spacing.md,
+              },
+            ]}
+          >
+            {filteredMaterials.length} materi tersedia
+          </Text>
+
+          {loading ? (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredMaterials}
+              keyExtractor={item => String(item.id)}
+              renderItem={renderItem}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+              ListEmptyComponent={
+                <View
+                  style={{
+                    paddingTop: spacing.xl,
+                    alignItems: 'center',
+                  }}
                 >
-                  Tidak ada materi ditemukan
-                </Text>
-              </View>
-            }
-          />
-        )}
-      </View>
-    </AppLayout>
+                  <Text
+                    style={[
+                      typography.small,
+                      {
+                        color: colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    Tidak ada materi ditemukan
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+      </AppLayout>
+    </SafeAreaView>
   );
 }

@@ -8,6 +8,10 @@ import {
   TextInput,
   RefreshControl,
 } from 'react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { FileText, ChevronRight, Search, Trophy } from 'lucide-react-native';
 
@@ -30,6 +34,7 @@ const tabs = [
 export default function TryoutScreen({ navigation, route }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -581,154 +586,162 @@ export default function TryoutScreen({ navigation, route }) {
   };
 
   return (
-    <AppLayout>
-      <View
-        style={{
-          flex: 1,
-          paddingTop: spacing.md,
-          paddingHorizontal: spacing.md,
-        }}
-      >
-        {/* Header */}
-        <View style={{ marginBottom: spacing.md }}>
-          <Text style={[typography.small, { color: colors.textSecondary }]}>
-            Latihan ujian
-          </Text>
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
+        <View
+          style={{
+            flex: 1,
+            paddingTop: spacing.md,
+            paddingHorizontal: spacing.md,
+          }}
+        >
+          {/* Header */}
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={[typography.small, { color: colors.textSecondary }]}>
+              Latihan ujian
+            </Text>
 
+            <Text
+              style={[
+                typography.h1,
+                {
+                  color: colors.text,
+                  marginTop: 4,
+                },
+              ]}
+            >
+              Tryout UKAI
+            </Text>
+          </View>
+
+          {/* Search */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.card || colors.background,
+              borderRadius: 16,
+              paddingHorizontal: 14,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <Search size={18} color={colors.textSecondary} />
+
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={
+                tab === 'tryout' ? 'Cari tryout...' : 'Cari hasil tryout...'
+              }
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+                color: colors.text,
+                fontSize: 14,
+              }}
+            />
+          </View>
+
+          {/* Tabs */}
+          <View
+            style={{
+              flexDirection: 'row',
+              padding: 4,
+              borderRadius: 16,
+              backgroundColor: colors.card || colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: spacing.md,
+            }}
+          >
+            {tabs.map(renderTab)}
+          </View>
+
+          {/* Info */}
           <Text
             style={[
-              typography.h1,
+              typography.small,
               {
-                color: colors.text,
-                marginTop: 4,
+                color: colors.textSecondary,
+                marginBottom: spacing.md,
               },
             ]}
           >
-            Tryout UKAI
+            {activeData.length}{' '}
+            {tab === 'tryout' ? 'tryout tersedia' : 'hasil tersedia'}
           </Text>
-        </View>
 
-        {/* Search */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.card || colors.background,
-            borderRadius: 16,
-            paddingHorizontal: 14,
-            marginBottom: spacing.sm,
-          }}
-        >
-          <Search size={18} color={colors.textSecondary} />
+          {/* Content */}
+          {loading ? (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={activeData}
+              keyExtractor={(item, index) => {
+                if (tab === 'result') {
+                  return item.attempt_token
+                    ? String(item.attempt_token)
+                    : `result-${index}`;
+                }
 
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder={
-              tab === 'tryout' ? 'Cari tryout...' : 'Cari hasil tryout...'
-            }
-            placeholderTextColor={colors.textSecondary}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 10,
-              color: colors.text,
-              fontSize: 14,
-            }}
-          />
-        </View>
-
-        {/* Tabs */}
-        <View
-          style={{
-            flexDirection: 'row',
-            padding: 4,
-            borderRadius: 16,
-            backgroundColor: colors.card || colors.background,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: spacing.md,
-          }}
-        >
-          {tabs.map(renderTab)}
-        </View>
-
-        {/* Info */}
-        <Text
-          style={[
-            typography.small,
-            {
-              color: colors.textSecondary,
-              marginBottom: spacing.md,
-            },
-          ]}
-        >
-          {activeData.length}{' '}
-          {tab === 'tryout' ? 'tryout tersedia' : 'hasil tersedia'}
-        </Text>
-
-        {/* Content */}
-        {loading ? (
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : (
-          <FlatList
-            data={activeData}
-            keyExtractor={(item, index) => {
-              if (tab === 'result') {
-                return item.attempt_token
-                  ? String(item.attempt_token)
-                  : `result-${index}`;
+                return item.id ? String(item.id) : `tryout-${index}`;
+              }}
+              renderItem={renderItem}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingBottom: 20 + insets.bottom,
+              }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
               }
-
-              return item.id ? String(item.id) : `tryout-${index}`;
-            }}
-            renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingBottom: 120, // space untuk bottom tab
-            }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <View
-                style={{
-                  paddingTop: spacing.xl,
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    typography.small,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
+              ListEmptyComponent={
+                <View
+                  style={{
+                    paddingTop: spacing.xl,
+                    alignItems: 'center',
+                  }}
                 >
-                  {tab === 'tryout'
-                    ? 'Tidak ada tryout ditemukan'
-                    : 'Belum ada hasil tryout'}
-                </Text>
-              </View>
-            }
-          />
-        )}
-      </View>
-    </AppLayout>
+                  <Text
+                    style={[
+                      typography.small,
+                      {
+                        color: colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {tab === 'tryout'
+                      ? 'Tidak ada tryout ditemukan'
+                      : 'Belum ada hasil tryout'}
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+      </AppLayout>
+    </SafeAreaView>
   );
 }

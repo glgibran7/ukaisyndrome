@@ -17,6 +17,10 @@ import {
   PlayCircle,
   Download,
 } from 'lucide-react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
@@ -88,6 +92,7 @@ export default function PrivateScreen({ navigation }) {
     navigation.navigate('PrivateViewer', {
       title: item.title,
       url: item.url,
+      is_downloadable: item.is_downloadable,
     });
   };
 
@@ -234,117 +239,129 @@ export default function PrivateScreen({ navigation }) {
   };
 
   return (
-    <AppLayout>
-      <View
-        style={{
-          flex: 1,
-          paddingTop: spacing.md,
-          paddingHorizontal: spacing.md,
-        }}
-      >
-        {/* Header */}
-        <View style={{ marginBottom: spacing.md }}>
-          <Text style={[typography.small, { color: colors.textSecondary }]}>
-            Materi eksklusif peserta
-          </Text>
-
-          <Text style={[typography.h1, { color: colors.text, marginTop: 4 }]}>
-            Private Class
-          </Text>
-        </View>
-
-        {/* Search */}
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
         <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.card || colors.background,
-            borderRadius: 16,
-            paddingHorizontal: 14,
-            marginBottom: spacing.sm,
+            flex: 1,
+            paddingTop: spacing.md,
+            paddingHorizontal: spacing.md,
           }}
         >
-          <Search size={18} color={colors.textSecondary} />
+          {/* Header */}
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={[typography.small, { color: colors.textSecondary }]}>
+              Materi eksklusif peserta
+            </Text>
 
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Cari materi private..."
-            placeholderTextColor={colors.textSecondary}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 10,
-              color: colors.text,
-              fontSize: 14,
-            }}
-          />
-        </View>
-
-        {/* Tabs */}
-        <View
-          style={{
-            flexDirection: 'row',
-            padding: 4,
-            borderRadius: 16,
-            backgroundColor: colors.card || colors.background,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: spacing.md,
-          }}
-        >
-          {TAB_OPTIONS.map(renderTab)}
-        </View>
-
-        {/* Info */}
-        <Text
-          style={[
-            typography.small,
-            {
-              color: colors.textSecondary,
-              marginBottom: spacing.md,
-            },
-          ]}
-        >
-          {filteredMaterials.length} materi tersedia
-        </Text>
-
-        {/* Content */}
-        {loading ? (
-          <View
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[typography.h1, { color: colors.text, marginTop: 4 }]}>
+              Private Class
+            </Text>
           </View>
-        ) : (
-          <FlatList
-            data={filteredMaterials}
-            keyExtractor={item => String(item.id || item.id_material)}
-            renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: spacing.md }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <View style={{ paddingTop: spacing.xl, alignItems: 'center' }}>
-                <Text
-                  style={[typography.small, { color: colors.textSecondary }]}
-                >
-                  Tidak ada materi ditemukan
-                </Text>
-              </View>
-            }
-          />
-        )}
-      </View>
-    </AppLayout>
+
+          {/* Search */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.card || colors.background,
+              borderRadius: 16,
+              paddingHorizontal: 14,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <Search size={18} color={colors.textSecondary} />
+
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Cari materi private..."
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+                color: colors.text,
+                fontSize: 14,
+              }}
+            />
+          </View>
+
+          {/* Tabs */}
+          <View
+            style={{
+              flexDirection: 'row',
+              padding: 4,
+              borderRadius: 16,
+              backgroundColor: colors.card || colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: spacing.md,
+            }}
+          >
+            {TAB_OPTIONS.map(renderTab)}
+          </View>
+
+          {/* Info */}
+          <Text
+            style={[
+              typography.small,
+              {
+                color: colors.textSecondary,
+                marginBottom: spacing.md,
+              },
+            ]}
+          >
+            {filteredMaterials.length} materi tersedia
+          </Text>
+
+          {/* Content */}
+          {loading ? (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredMaterials}
+              keyExtractor={item => String(item.id || item.id_material)}
+              renderItem={renderItem}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: spacing.md }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+              ListEmptyComponent={
+                <View style={{ paddingTop: spacing.xl, alignItems: 'center' }}>
+                  <Text
+                    style={[typography.small, { color: colors.textSecondary }]}
+                  >
+                    Tidak ada materi ditemukan
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+      </AppLayout>
+    </SafeAreaView>
   );
 }

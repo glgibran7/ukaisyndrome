@@ -13,6 +13,10 @@ import { BookText, ChevronRight, Search } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import AppCard from '../../components/ui/AppCard';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useToast } from '../../context/ToastProvider';
@@ -22,6 +26,7 @@ import { getModulPeserta } from '../../api/modul/modul.api';
 export default function MateriScreen({ navigation }) {
   const { colors, spacing, typography } = useTheme();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState([]);
@@ -93,7 +98,7 @@ export default function MateriScreen({ navigation }) {
               width: 42,
               height: 42,
               borderRadius: 14,
-              backgroundColor: `${colors.primary}`,
+              backgroundColor: `${colors.primary}18`,
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: spacing.md,
@@ -137,137 +142,145 @@ export default function MateriScreen({ navigation }) {
   );
 
   return (
-    <AppLayout>
-      <View
-        style={{
-          flex: 1,
-          paddingTop: spacing.md,
-          paddingHorizontal: spacing.md,
-        }}
-      >
-        {/* Header */}
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
         <View
           style={{
-            marginBottom: spacing.md,
+            flex: 1,
+            paddingTop: spacing.md,
+            paddingHorizontal: spacing.md,
           }}
         >
+          {/* Header */}
+          <View
+            style={{
+              marginBottom: spacing.md,
+            }}
+          >
+            <Text
+              style={[
+                typography.small,
+                {
+                  color: colors.textSecondary,
+                },
+              ]}
+            >
+              Materi belajar
+            </Text>
+
+            <Text
+              style={[
+                typography.h1,
+                {
+                  color: colors.text,
+                  marginTop: 4,
+                },
+              ]}
+            >
+              Modul Ukai
+            </Text>
+          </View>
+
+          {/* Search */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.card || colors.background,
+              borderRadius: 16,
+              paddingHorizontal: 14,
+              marginBottom: spacing.md,
+            }}
+          >
+            <Search size={18} color={colors.textSecondary} />
+
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Cari modul..."
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+                color: colors.text,
+                fontSize: 14,
+              }}
+            />
+          </View>
+
+          {/* Sub info */}
           <Text
             style={[
               typography.small,
               {
                 color: colors.textSecondary,
+                marginBottom: spacing.md,
               },
             ]}
           >
-            Materi belajar
+            {filteredModules.length} modul tersedia
           </Text>
 
-          <Text
-            style={[
-              typography.h1,
-              {
-                color: colors.text,
-                marginTop: 4,
-              },
-            ]}
-          >
-            Modul Ukai
-          </Text>
-        </View>
-
-        {/* Search */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.card || colors.background,
-            borderRadius: 16,
-            paddingHorizontal: 14,
-            marginBottom: spacing.md,
-          }}
-        >
-          <Search size={18} color={colors.textSecondary} />
-
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Cari modul..."
-            placeholderTextColor={colors.textSecondary}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 10,
-              color: colors.text,
-              fontSize: 14,
-            }}
-          />
-        </View>
-
-        {/* Sub info */}
-        <Text
-          style={[
-            typography.small,
-            {
-              color: colors.textSecondary,
-              marginBottom: spacing.md,
-            },
-          ]}
-        >
-          {filteredModules.length} modul tersedia
-        </Text>
-
-        {/* Content */}
-        {loading ? (
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : (
-          <FlatList
-            data={filteredModules}
-            keyExtractor={item => String(item.id)}
-            renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingBottom: 0,
-            }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <View
-                style={{
-                  paddingTop: spacing.xl,
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    typography.small,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
+          {/* Content */}
+          {loading ? (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredModules}
+              keyExtractor={item => String(item.id)}
+              renderItem={renderItem}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingBottom: 20 + insets.bottom,
+              }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+              ListEmptyComponent={
+                <View
+                  style={{
+                    paddingTop: spacing.xl,
+                    alignItems: 'center',
+                  }}
                 >
-                  Tidak ada modul ditemukan
-                </Text>
-              </View>
-            }
-          />
-        )}
-      </View>
-    </AppLayout>
+                  <Text
+                    style={[
+                      typography.small,
+                      {
+                        color: colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    Tidak ada modul ditemukan
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+      </AppLayout>
+    </SafeAreaView>
   );
 }

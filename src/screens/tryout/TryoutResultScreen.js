@@ -7,6 +7,10 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { CheckCircle, RotateCcw, Home, Award } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
@@ -116,154 +120,196 @@ export default function TryoutResultScreen({ route, navigation }) {
     score >= 75 ? 'Lulus' : score >= 50 ? 'Cukup Baik' : 'Perlu Belajar Lagi';
 
   return (
-    <AppLayout>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.container,
-          { paddingHorizontal: spacing.md, paddingBottom: 40 },
-        ]}
-      >
-        {/* ── Header ── */}
-        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-          <Award size={22} color={colors.primary} strokeWidth={2} />
-          <Text style={[styles.headerText, { color: colors.textSecondary }]}>
-            Hasil Tryout
-          </Text>
-        </Animated.View>
-
-        {/* ── Score ring ── */}
-        <Animated.View
-          style={[
-            styles.scoreRing,
-            {
-              backgroundColor: scoreBg,
-              borderColor: scoreColor + '40',
-              transform: [{ scale: scoreScale }],
-              opacity: scoreAnim,
-            },
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.container,
+            { paddingHorizontal: spacing.md, paddingBottom: 40 },
           ]}
         >
-          <Text style={[styles.scoreValue, { color: scoreColor }]}>
-            {scoreRounded}
-          </Text>
-          <Text style={[styles.scoreUnit, { color: scoreColor }]}>/ 100</Text>
-          <Text style={[styles.scoreLabel, { color: scoreColor }]}>
-            {scoreLabel}
-          </Text>
-        </Animated.View>
-
-        {/* ── Stats grid ── */}
-        <View style={styles.statsGrid}>
-          <StatCard
-            label="Benar"
-            value={result?.benar ?? 0}
-            color="#22C55E"
-            bg="rgba(34,197,94,0.08)"
-            anim={stat1Anim}
-          />
-          <StatCard
-            label="Salah"
-            value={result?.salah ?? 0}
-            color="#EF4444"
-            bg="rgba(239,68,68,0.08)"
-            anim={stat2Anim}
-          />
-          <StatCard
-            label="Kosong"
-            value={result?.kosong ?? 0}
-            color="#9CA3AF"
-            bg="rgba(156,163,175,0.08)"
-            anim={stat3Anim}
-          />
-          <StatCard
-            label="Ragu-ragu"
-            value={result?.ragu_ragu ?? 0}
-            color="#F59E0B"
-            bg="rgba(245,158,11,0.08)"
-            anim={stat4Anim}
-          />
-        </View>
-
-        {/* ── Progress bar benar/salah ── */}
-        <Animated.View
-          style={[
-            styles.progressCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              opacity: fadeAnim,
-            },
-          ]}
-        >
-          <View style={styles.progressHeader}>
-            <Text style={[styles.progressTitle, { color: colors.text }]}>
-              Distribusi Jawaban
+          {/* ── Header ── */}
+          <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+            <Award size={22} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.headerText, { color: colors.textSecondary }]}>
+              Hasil Tryout
             </Text>
-            <Text
-              style={[styles.progressTotal, { color: colors.textSecondary }]}
-            >
-              {(result?.benar ?? 0) +
-                (result?.salah ?? 0) +
-                (result?.kosong ?? 0)}{' '}
-              soal
+          </Animated.View>
+
+          {/* ── Score ring ── */}
+          <Animated.View
+            style={[
+              styles.scoreRing,
+              {
+                backgroundColor: scoreBg,
+                borderColor: scoreColor + '40',
+                transform: [{ scale: scoreScale }],
+                opacity: scoreAnim,
+              },
+            ]}
+          >
+            <Text style={[styles.scoreValue, { color: scoreColor }]}>
+              {scoreRounded}
             </Text>
-          </View>
+            <Text style={[styles.scoreUnit, { color: scoreColor }]}>/ 100</Text>
+            <Text style={[styles.scoreLabel, { color: scoreColor }]}>
+              {scoreLabel}
+            </Text>
+          </Animated.View>
 
-          <ProgressBar
-            benar={result?.benar ?? 0}
-            salah={result?.salah ?? 0}
-            kosong={result?.kosong ?? 0}
-            total={
-              (result?.benar ?? 0) +
-              (result?.salah ?? 0) +
-              (result?.kosong ?? 0)
-            }
-          />
-
-          <View style={styles.progressLegend}>
-            <LegendDot color="#22C55E" label={`${result?.benar ?? 0} Benar`} />
-            <LegendDot color="#EF4444" label={`${result?.salah ?? 0} Salah`} />
-            <LegendDot
-              color="#E5E7EB"
-              label={`${result?.kosong ?? 0} Kosong`}
+          {/* ── Stats grid ── */}
+          <View style={styles.statsGrid}>
+            <StatCard
+              label="Benar"
+              value={result?.benar ?? 0}
+              color="#22C55E"
+              bg="rgba(34,197,94,0.08)"
+              anim={stat1Anim}
+            />
+            <StatCard
+              label="Salah"
+              value={result?.salah ?? 0}
+              color="#EF4444"
+              bg="rgba(239,68,68,0.08)"
+              anim={stat2Anim}
+            />
+            <StatCard
+              label="Kosong"
+              value={result?.kosong ?? 0}
+              color="#9CA3AF"
+              bg="rgba(156,163,175,0.08)"
+              anim={stat3Anim}
+            />
+            <StatCard
+              label="Ragu-ragu"
+              value={result?.ragu_ragu ?? 0}
+              color="#F59E0B"
+              bg="rgba(245,158,11,0.08)"
+              anim={stat4Anim}
             />
           </View>
-        </Animated.View>
 
-        {/* ── Buttons ── */}
-        <Animated.View style={[styles.buttons, { opacity: fadeAnim }]}>
-          {/* ── Buttons ── */}
-          <Animated.View style={[styles.buttonsWrap, { opacity: fadeAnim }]}>
-            {/* Row 1 */}
-            <View style={styles.buttons}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() =>
-                  navigation.reset({
-                    index: 0,
-                    routes: [
-                      {
-                        name: 'Tabs',
-                      },
-                    ],
-                  })
-                }
-                style={[
-                  styles.btnSecondary,
-                  {
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                  },
-                ]}
+          {/* ── Progress bar benar/salah ── */}
+          <Animated.View
+            style={[
+              styles.progressCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <View style={styles.progressHeader}>
+              <Text style={[styles.progressTitle, { color: colors.text }]}>
+                Distribusi Jawaban
+              </Text>
+              <Text
+                style={[styles.progressTotal, { color: colors.textSecondary }]}
               >
-                <Home size={18} color={colors.text} strokeWidth={2} />
+                {(result?.benar ?? 0) +
+                  (result?.salah ?? 0) +
+                  (result?.kosong ?? 0)}{' '}
+                soal
+              </Text>
+            </View>
 
-                <Text style={[styles.btnSecondaryText, { color: colors.text }]}>
-                  Kembali
-                </Text>
-              </TouchableOpacity>
+            <ProgressBar
+              benar={result?.benar ?? 0}
+              salah={result?.salah ?? 0}
+              kosong={result?.kosong ?? 0}
+              total={
+                (result?.benar ?? 0) +
+                (result?.salah ?? 0) +
+                (result?.kosong ?? 0)
+              }
+            />
 
+            <View style={styles.progressLegend}>
+              <LegendDot
+                color="#22C55E"
+                label={`${result?.benar ?? 0} Benar`}
+              />
+              <LegendDot
+                color="#EF4444"
+                label={`${result?.salah ?? 0} Salah`}
+              />
+              <LegendDot
+                color="#E5E7EB"
+                label={`${result?.kosong ?? 0} Kosong`}
+              />
+            </View>
+          </Animated.View>
+
+          {/* ── Buttons ── */}
+          <Animated.View style={[styles.buttons, { opacity: fadeAnim }]}>
+            {/* ── Buttons ── */}
+            <Animated.View style={[styles.buttonsWrap, { opacity: fadeAnim }]}>
+              {/* Row 1 */}
+              <View style={styles.buttons}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    navigation.reset({
+                      index: 0,
+                      routes: [
+                        {
+                          name: 'Tabs',
+                        },
+                      ],
+                    })
+                  }
+                  style={[
+                    styles.btnSecondary,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.card,
+                    },
+                  ]}
+                >
+                  <Home size={18} color={colors.text} strokeWidth={2} />
+
+                  <Text
+                    style={[styles.btnSecondaryText, { color: colors.text }]}
+                  >
+                    Kembali
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    navigation.reset({
+                      index: 0,
+                      routes: [
+                        {
+                          name: 'Tabs',
+                          state: {
+                            routes: [{ name: 'Tryout' }],
+                          },
+                        },
+                      ],
+                    })
+                  }
+                  style={[
+                    styles.btnPrimary,
+                    { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <RotateCcw size={18} color="#fff" strokeWidth={2.2} />
+
+                  <Text style={styles.btnPrimaryText}>Coba Lagi</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Row 2 - Pembahasan */}
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={() =>
@@ -273,64 +319,45 @@ export default function TryoutResultScreen({ route, navigation }) {
                       {
                         name: 'Tabs',
                         state: {
-                          routes: [{ name: 'Tryout' }],
+                          routes: [
+                            {
+                              name: 'Tryout',
+                              params: {
+                                initialTab: 'result',
+                                openAttemptToken: route?.params?.attemptToken,
+                              },
+                            },
+                          ],
                         },
                       },
                     ],
                   })
                 }
-                style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.btnPembahasan,
+                  {
+                    backgroundColor: `${colors.primary}15`,
+                    borderColor: `${colors.primary}25`,
+                  },
+                ]}
               >
-                <RotateCcw size={18} color="#fff" strokeWidth={2.2} />
+                <CheckCircle
+                  size={18}
+                  color={colors.primary}
+                  strokeWidth={2.2}
+                />
 
-                <Text style={styles.btnPrimaryText}>Coba Lagi</Text>
+                <Text
+                  style={[styles.btnPembahasanText, { color: colors.primary }]}
+                >
+                  Lihat Pembahasan
+                </Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Row 2 - Pembahasan */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() =>
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: 'Tabs',
-                      state: {
-                        routes: [
-                          {
-                            name: 'Tryout',
-                            params: {
-                              initialTab: 'result',
-                              openAttemptToken: route?.params?.attemptToken,
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                })
-              }
-              style={[
-                styles.btnPembahasan,
-                {
-                  backgroundColor: `${colors.primary}15`,
-                  borderColor: `${colors.primary}25`,
-                },
-              ]}
-            >
-              <CheckCircle size={18} color={colors.primary} strokeWidth={2.2} />
-
-              <Text
-                style={[styles.btnPembahasanText, { color: colors.primary }]}
-              >
-                Lihat Pembahasan
-              </Text>
-            </TouchableOpacity>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </ScrollView>
-    </AppLayout>
+        </ScrollView>
+      </AppLayout>
+    </SafeAreaView>
   );
 }
 

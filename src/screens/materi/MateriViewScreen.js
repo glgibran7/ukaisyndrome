@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { ChevronLeft, House, ShieldOff } from 'lucide-react-native';
+import { ChevronLeft, House, ShieldOff, Download } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -45,8 +45,9 @@ function RecordingOverlay() {
    MAIN SCREEN
 ───────────────────────────────────────────── */
 export default function MateriViewerScreen({ route, navigation }) {
-  const { title, url } = route.params;
+  const { title, url, is_downloadable } = route.params;
   const { colors, spacing, typography } = useTheme();
+  console.log('DOWNLOADABLE:', is_downloadable);
 
   const user = useUserStore(state => state.user);
   const name = user?.name || 'Peserta';
@@ -97,6 +98,23 @@ export default function MateriViewerScreen({ route, navigation }) {
               {title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
             </Text>
           </Text>
+
+          {Number(is_downloadable) === 1 && (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(url)}
+              style={{
+                marginLeft: spacing.sm,
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: `${colors.primary}14`,
+              }}
+            >
+              <Download size={18} color={colors.primary} />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={() =>
