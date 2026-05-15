@@ -10,10 +10,13 @@ import {
   RefreshControl,
   Modal,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { X, Sun, SunMoon } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AppLayout from '../../components/AppLayout';
 import { useUserStore } from '../../store/userStore';
@@ -82,6 +85,7 @@ function SectionHeader({ title, subtitle, colors, typography, spacing }) {
         >
           {title}
         </Text>
+
         {subtitle && (
           <Text
             style={[
@@ -100,12 +104,14 @@ function SectionHeader({ title, subtitle, colors, typography, spacing }) {
 // ─── Mentor card ──────────────────────────────────────────────────────────────
 function MentorCard({ mentor, spacing }) {
   const scale = useRef(new Animated.Value(1)).current;
+
   const onPressIn = () =>
     Animated.spring(scale, {
       toValue: 0.95,
       useNativeDriver: true,
       speed: 30,
     }).start();
+
   const onPressOut = () =>
     Animated.spring(scale, {
       toValue: 1,
@@ -134,12 +140,14 @@ function MentorCard({ mentor, spacing }) {
 // ─── Module card ──────────────────────────────────────────────────────────────
 function ModuleCard({ module, spacing }) {
   const scale = useRef(new Animated.Value(1)).current;
+
   const onPressIn = () =>
     Animated.spring(scale, {
       toValue: 0.96,
       useNativeDriver: true,
       speed: 30,
     }).start();
+
   const onPressOut = () =>
     Animated.spring(scale, {
       toValue: 1,
@@ -166,17 +174,21 @@ function ModuleCard({ module, spacing }) {
 }
 
 // ─── Ads Modal ────────────────────────────────────────────────────────────────
-function AdsModal({ visible, ads, onClose }) {
+function AdsModal({ visible, ads, onClose, bottomInset }) {
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const btnOpacity = useRef(new Animated.Value(0)).current;
+
   const [countdown, setCountdown] = useState(3);
+
   const countdownRef = useRef(null);
 
-  // Auto-detect ukuran gambar
   const [imgRatio, setImgRatio] = useState(1);
+
   const cardWidth = SCREEN_WIDTH - 56;
-  const MAX_HEIGHT = Dimensions.get('window').height * 0.75;
+
+  const MAX_HEIGHT = Dimensions.get('window').height * 0.68;
+
   const imgHeight = Math.min(cardWidth / imgRatio, MAX_HEIGHT);
 
   useEffect(() => {
@@ -193,7 +205,6 @@ function AdsModal({ visible, ads, onClose }) {
     if (visible) {
       setCountdown(3);
 
-      // Animasi masuk
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
@@ -201,6 +212,7 @@ function AdsModal({ visible, ads, onClose }) {
           damping: 16,
           stiffness: 220,
         }),
+
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
@@ -208,18 +220,20 @@ function AdsModal({ visible, ads, onClose }) {
         }),
       ]).start();
 
-      // Countdown 3 detik sebelum tombol close muncul
       countdownRef.current = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(countdownRef.current);
+
             Animated.timing(btnOpacity, {
               toValue: 1,
               duration: 250,
               useNativeDriver: true,
             }).start();
+
             return 0;
           }
+
           return prev - 1;
         });
       }, 1000);
@@ -240,12 +254,21 @@ function AdsModal({ visible, ads, onClose }) {
         damping: 14,
         stiffness: 240,
       }),
+
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: 160,
         useNativeDriver: true,
       }),
     ]).start(() => onClose());
+  };
+
+  const handleOpenLink = () => {
+    const url = ads?.[0]?.link;
+
+    if (url) {
+      Linking.openURL(url).catch(() => {});
+    }
   };
 
   if (!ads?.length) return null;
@@ -259,43 +282,46 @@ function AdsModal({ visible, ads, onClose }) {
       animationType="none"
       onRequestClose={handleClose}
     >
-      <Animated.View style={[styles.adsBackdrop, { opacity: opacityAnim }]}>
-        {/* Backdrop tap — hanya bisa tutup kalau countdown habis */}
-        {countdown === 0 && (
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={handleClose}
-            style={StyleSheet.absoluteFill}
-          />
-        )}
-
+      <Animated.View
+        style={[
+          styles.adsBackdrop,
+          {
+            opacity: opacityAnim,
+            paddingBottom: bottomInset + 16,
+          },
+        ]}
+      >
         <Animated.View
-          style={[styles.adsCard, { transform: [{ scale: scaleAnim }] }]}
+          style={[styles.adsWrapper, { transform: [{ scale: scaleAnim }] }]}
         >
-          {/* Gambar iklan */}
-          <Image
-            source={{ uri: ad.image }}
-            style={[styles.adsImage, { height: imgHeight }]}
-            resizeMode="contain"
-          />
+          <TouchableOpacity
+            activeOpacity={0.92}
+            onPress={ad.link ? handleOpenLink : undefined}
+            disabled={!ad.link}
+            style={styles.adsCard}
+          >
+            <Image
+              source={{ uri: ad.image }}
+              style={[styles.adsImage, { height: imgHeight }]}
+              resizeMode="contain"
+            />
 
-          {/* Tombol close — muncul setelah countdown */}
+            {countdown > 0 && (
+              <View style={styles.countdownBadge}>
+                <Text style={styles.countdownText}>{countdown}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
           <Animated.View style={[styles.closeWrap, { opacity: btnOpacity }]}>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleClose}
               style={styles.closeBtn}
             >
-              <X size={16} color="#fff" strokeWidth={2.5} />
+              <X size={18} color="#fff" strokeWidth={2.5} />
             </TouchableOpacity>
           </Animated.View>
-
-          {/* Countdown badge — tampil selama hitung mundur */}
-          {countdown > 0 && (
-            <View style={styles.countdownBadge}>
-              <Text style={styles.countdownText}>{countdown}</Text>
-            </View>
-          )}
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -305,8 +331,13 @@ function AdsModal({ visible, ads, onClose }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen({ navigation }) {
   const { colors, spacing, typography } = useTheme();
+
+  const insets = useSafeAreaInsets();
+
   const [refreshing, setRefreshing] = useState(false);
+
   const user = useUserStore(state => state.user);
+
   const fetchUser = useUserStore(state => state.fetchUser);
 
   const [mentors, setMentors] = useState([]);
@@ -318,8 +349,10 @@ export default function HomeScreen({ navigation }) {
 
   const mentorScrollRef = useRef(null);
   const moduleScrollRef = useRef(null);
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
+
   const [mentorDirection, setMentorDirection] = useState(1);
   const [moduleDirection, setModuleDirection] = useState(1);
 
@@ -348,6 +381,7 @@ export default function HomeScreen({ navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
+
     try {
       await fetchUser();
       await fetchData();
@@ -360,6 +394,7 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     if (!user) fetchUser().catch(console.log);
+
     fetchData();
   }, []);
 
@@ -369,9 +404,11 @@ export default function HomeScreen({ navigation }) {
         fetch(
           'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/mentors.json',
         ),
+
         fetch(
           'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/modules.json',
         ),
+
         fetch(
           'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/ads.json',
         ),
@@ -385,9 +422,6 @@ export default function HomeScreen({ navigation }) {
       if (adsData?.length) {
         setAds(adsData);
 
-        /**
-         * hanya tampil sekali selama app masih hidup
-         */
         if (!hasShownAdsThisSession) {
           hasShownAdsThisSession = true;
 
@@ -420,54 +454,71 @@ export default function HomeScreen({ navigation }) {
   // Auto-scroll mentor
   useEffect(() => {
     if (!mentors.length) return;
+
     const itemWidth = MENTOR_CARD_WIDTH + spacing.sm;
+
     const interval = setInterval(() => {
       let next = activeIndex + mentorDirection;
+
       let dir = mentorDirection;
+
       if (next >= mentors.length - 1) {
         next = mentors.length - 1;
         dir = -1;
       }
+
       if (next <= 0) {
         next = 0;
         dir = 1;
       }
+
       mentorScrollRef.current?.scrollTo({
         x: next * itemWidth,
         animated: true,
       });
+
       setActiveIndex(next);
       setMentorDirection(dir);
     }, 3200);
+
     return () => clearInterval(interval);
   }, [activeIndex, mentorDirection, mentors, spacing.sm]);
 
   // Auto-scroll module
   useEffect(() => {
     if (!modules.length) return;
+
     const itemWidth = MODULE_CARD_WIDTH + spacing.sm;
+
     const interval = setInterval(() => {
       let next = activeModuleIndex + moduleDirection;
+
       let dir = moduleDirection;
+
       if (next >= modules.length - 1) {
         next = modules.length - 1;
         dir = -1;
       }
+
       if (next <= 0) {
         next = 0;
         dir = 1;
       }
+
       moduleScrollRef.current?.scrollTo({
         x: next * itemWidth,
         animated: true,
       });
+
       setActiveModuleIndex(next);
       setModuleDirection(dir);
     }, 3200);
+
     return () => clearInterval(interval);
   }, [activeModuleIndex, moduleDirection, modules, spacing.sm]);
 
   const greetingHour = new Date().getHours();
+
   const greeting =
     greetingHour < 11
       ? 'Selamat Pagi'
@@ -485,6 +536,7 @@ export default function HomeScreen({ navigation }) {
           style={[
             styles.stickyHeader,
             {
+              paddingTop: spacing.md,
               paddingHorizontal: spacing.md,
               backgroundColor: colors.background,
             },
@@ -499,6 +551,7 @@ export default function HomeScreen({ navigation }) {
             >
               {greeting}
             </Text>
+
             <Text
               numberOfLines={1}
               style={[
@@ -529,7 +582,11 @@ export default function HomeScreen({ navigation }) {
             <Text
               style={[
                 typography.small,
-                { color: colors.primary, fontSize: 10, fontWeight: '700' },
+                {
+                  color: colors.primary,
+                  fontSize: 10,
+                  fontWeight: '700',
+                },
               ]}
             >
               {new Date().toLocaleDateString('id-ID', {
@@ -551,7 +608,9 @@ export default function HomeScreen({ navigation }) {
           contentContainerStyle={{
             paddingHorizontal: spacing.md,
             paddingTop: spacing.sm,
-            paddingBottom: spacing.xl + 24,
+
+            // SAFE AREA BOTTOM
+            paddingBottom: (insets.bottom || 20) + spacing.xl + 90,
           }}
           refreshControl={
             <RefreshControl
@@ -567,7 +626,10 @@ export default function HomeScreen({ navigation }) {
             <View
               style={[
                 styles.classCard,
-                { backgroundColor: colors.primary, marginBottom: spacing.lg },
+                {
+                  backgroundColor: colors.primary,
+                  marginBottom: spacing.lg,
+                },
               ]}
             >
               <View
@@ -582,6 +644,7 @@ export default function HomeScreen({ navigation }) {
                   },
                 ]}
               />
+
               <View
                 style={[
                   styles.decCircle,
@@ -604,14 +667,17 @@ export default function HomeScreen({ navigation }) {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.classLabel}>Kelas Aktif</Text>
+
                   <Text style={styles.className} numberOfLines={2}>
                     {user.classes[0].name
                       ?.toLowerCase()
                       .replace(/\b\w/g, c => c.toUpperCase())}
                   </Text>
                 </View>
+
                 <View style={styles.activeBadge}>
                   <View style={styles.activeDot} />
+
                   <Text style={styles.activeText}>Aktif</Text>
                 </View>
               </View>
@@ -643,6 +709,7 @@ export default function HomeScreen({ navigation }) {
               typography={typography}
               spacing={spacing}
             />
+
             {loading ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {[1, 2, 3].map(i => (
@@ -652,12 +719,14 @@ export default function HomeScreen({ navigation }) {
                       height={MENTOR_CARD_WIDTH * 1.25}
                       radius={14}
                     />
+
                     <SkeletonBox
                       width={MENTOR_CARD_WIDTH * 0.7}
                       height={12}
                       radius={6}
                       style={{ marginTop: 8 }}
                     />
+
                     <SkeletonBox
                       width={MENTOR_CARD_WIDTH * 0.5}
                       height={10}
@@ -680,6 +749,7 @@ export default function HomeScreen({ navigation }) {
                     e.nativeEvent.contentOffset.x /
                       (MENTOR_CARD_WIDTH + spacing.sm),
                   );
+
                   setActiveIndex(i >= mentors.length ? 0 : i);
                 }}
               >
@@ -699,6 +769,7 @@ export default function HomeScreen({ navigation }) {
               typography={typography}
               spacing={spacing}
             />
+
             {loading ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {[1, 2].map(i => (
@@ -708,12 +779,14 @@ export default function HomeScreen({ navigation }) {
                       height={MODULE_CARD_WIDTH * 0.6}
                       radius={14}
                     />
+
                     <SkeletonBox
                       width={MODULE_CARD_WIDTH * 0.8}
                       height={12}
                       radius={6}
                       style={{ marginTop: 8 }}
                     />
+
                     <SkeletonBox
                       width={MODULE_CARD_WIDTH * 0.5}
                       height={10}
@@ -736,6 +809,7 @@ export default function HomeScreen({ navigation }) {
                     e.nativeEvent.contentOffset.x /
                       (MODULE_CARD_WIDTH + spacing.sm),
                   );
+
                   setActiveModuleIndex(i >= modules.length ? 0 : i);
                 }}
               >
@@ -753,6 +827,7 @@ export default function HomeScreen({ navigation }) {
         visible={adsVisible}
         ads={ads}
         onClose={() => setAdsVisible(false)}
+        bottomInset={insets.bottom}
       />
     </AppLayout>
   );
@@ -763,12 +838,12 @@ const styles = StyleSheet.create({
   stickyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 10,
     paddingBottom: 8,
     zIndex: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.06)',
   },
+
   datePill: {
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -776,6 +851,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginLeft: 12,
   },
+
   classCard: {
     borderRadius: 20,
     padding: 20,
@@ -786,6 +862,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
   },
+
   classLabel: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.7)',
@@ -794,6 +871,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 6,
   },
+
   className: {
     fontSize: 20,
     color: '#fff',
@@ -801,6 +879,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     lineHeight: 26,
   },
+
   activeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -810,6 +889,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginLeft: 10,
   },
+
   activeDot: {
     width: 6,
     height: 6,
@@ -817,15 +897,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#4ADE80',
     marginRight: 5,
   },
-  activeText: { fontSize: 11, color: '#fff', fontWeight: '700' },
+
+  activeText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '700',
+  },
+
   batchChip: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
   },
-  batchText: { fontSize: 12, color: '#fff', fontWeight: '700' },
-  decCircle: { position: 'absolute', borderRadius: 999 },
+
+  batchText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '700',
+  },
+
+  decCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+
   mentorCard: {
     width: MENTOR_CARD_WIDTH,
     height: MENTOR_CARD_WIDTH * 1.35,
@@ -837,7 +933,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
   },
-  mentorImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+
+  mentorImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+
   moduleCard: {
     width: MODULE_CARD_WIDTH,
     height: MODULE_CARD_WIDTH * 1.35,
@@ -849,7 +951,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
   },
-  moduleImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+
+  moduleImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
 
   // Ads
   adsBackdrop: {
@@ -859,35 +966,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 28,
   },
+
+  adsWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+
   adsCard: {
     width: '100%',
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#1a1a1a',
     elevation: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
   },
+
   adsImage: {
     width: '100%',
   },
-  closeWrap: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
+
   countdownBadge: {
     position: 'absolute',
     top: 10,
@@ -901,9 +1001,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
+
   countdownText: {
     color: '#fff',
     fontSize: 13,
     fontWeight: '800',
+  },
+
+  closeWrap: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+
+  closeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
 });

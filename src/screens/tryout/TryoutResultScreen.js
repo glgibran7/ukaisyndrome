@@ -245,9 +245,6 @@ export default function TryoutResultScreen({ route, navigation }) {
                     routes: [
                       {
                         name: 'Tabs',
-                        state: {
-                          routes: [{ name: 'Tryout' }],
-                        },
                       },
                     ],
                   })

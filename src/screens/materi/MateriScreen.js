@@ -171,7 +171,7 @@ export default function MateriScreen({ navigation }) {
               },
             ]}
           >
-            Modul UKAI
+            Modul Ukai
           </Text>
         </View>
 

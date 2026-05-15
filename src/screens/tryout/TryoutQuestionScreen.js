@@ -22,11 +22,16 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AlertTriangle, CheckCircle, Clock, Send } from 'lucide-react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import AppLayout from '../../components/AppLayout';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useToast } from '../../context/ToastProvider';
+import { useScreenSecurity } from '../../hook/useScreenSecurity';
 
 import {
   getAttemptQuestions,
@@ -198,6 +203,18 @@ function StatPill({ label, value, color }) {
   );
 }
 
+function RecordingOverlay() {
+  return (
+    <View style={styles.overlay}>
+      <ShieldOff size={48} color="#fff" strokeWidth={1.5} />
+      <Text style={styles.overlayTitle}>Konten Dilindungi</Text>
+      <Text style={styles.overlayDesc}>
+        Perekaman layar tidak diizinkan pada halaman ini.
+      </Text>
+    </View>
+  );
+}
+
 /* ─────────────────────────────────────────────
    MAIN SCREEN
 ───────────────────────────────────────────── */
@@ -217,6 +234,8 @@ export default function TryoutQuestionScreen({ route, navigation }) {
 
   const [endTime, setEndTime] = useState(null);
   const [remainingTime, setRemainingTime] = useState(0);
+
+  const { isRecording } = useScreenSecurity();
 
   useEffect(() => {
     if (!endTime) return;
@@ -427,121 +446,133 @@ export default function TryoutQuestionScreen({ route, navigation }) {
   }
 
   return (
-    <AppLayout>
-      <View style={{ flex: 1 }}>
-        {/* HEADER */}
-        <View
-          style={{
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.sm,
-          }}
-        >
-          <TryoutHeader
+    <SafeAreaView
+      edges={['bottom']}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
+    >
+      <AppLayout>
+        <View style={{ flex: 1 }}>
+          {/* HEADER */}
+          <View
+            style={{
+              paddingHorizontal: spacing.md,
+              paddingTop: spacing.md,
+              paddingBottom: spacing.sm,
+            }}
+          >
+            <TryoutHeader
+              colors={colors}
+              spacing={spacing}
+              currentIndex={currentIndex}
+              formattedTime={formattedTime}
+            />
+
+            {/* Navigasi soal trigger */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setPaletteVisible(true)}
+              style={[
+                styles.paletteButton,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <View>
+                <Text
+                  style={[styles.paletteLabel, { color: colors.textSecondary }]}
+                >
+                  Navigasi Soal
+                </Text>
+                <Text style={[styles.paletteValue, { color: colors.text }]}>
+                  Soal {currentIndex + 1} dari {questions.length}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.paletteBtn,
+                  { backgroundColor: `${colors.primary}15` },
+                ]}
+              >
+                <Text
+                  style={[styles.paletteBtnText, { color: colors.primary }]}
+                >
+                  Buka
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* CONTENT */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.md,
+              paddingBottom: 140,
+            }}
+          >
+            <QuestionCard question={currentQuestion} colors={colors} />
+
+            <View style={{ height: spacing.md }} />
+
+            {OPTIONS.map(option => {
+              const optionText = currentQuestion?.pilihan?.[option];
+              if (!optionText) return null;
+
+              const selected = currentAnswer?.answer === option;
+
+              return (
+                <OptionCard
+                  key={option}
+                  option={option}
+                  text={optionText}
+                  selected={selected}
+                  onPress={() => selectAnswer(currentQuestion.id, option)}
+                  colors={colors}
+                  spacing={spacing}
+                />
+              );
+            })}
+          </ScrollView>
+
+          {/* FOOTER */}
+          <TryoutFooter
             colors={colors}
             spacing={spacing}
             currentIndex={currentIndex}
-            formattedTime={formattedTime}
+            questions={questions}
+            currentAnswer={currentAnswer}
+            currentQuestion={currentQuestion}
+            toggleRagu={toggleRagu}
+            setCurrentIndex={setCurrentIndex}
+            onSubmitPress={() => setSubmitVisible(true)}
           />
-
-          {/* Navigasi soal trigger */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setPaletteVisible(true)}
-            style={[
-              styles.paletteButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <View>
-              <Text
-                style={[styles.paletteLabel, { color: colors.textSecondary }]}
-              >
-                Navigasi Soal
-              </Text>
-              <Text style={[styles.paletteValue, { color: colors.text }]}>
-                Soal {currentIndex + 1} dari {questions.length}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.paletteBtn,
-                { backgroundColor: `${colors.primary}15` },
-              ]}
-            >
-              <Text style={[styles.paletteBtnText, { color: colors.primary }]}>
-                Buka
-              </Text>
-            </View>
-          </TouchableOpacity>
         </View>
 
-        {/* CONTENT */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: spacing.md,
-            paddingBottom: 140,
-          }}
-        >
-          <QuestionCard question={currentQuestion} colors={colors} />
-
-          <View style={{ height: spacing.md }} />
-
-          {OPTIONS.map(option => {
-            const optionText = currentQuestion?.pilihan?.[option];
-            if (!optionText) return null;
-
-            const selected = currentAnswer?.answer === option;
-
-            return (
-              <OptionCard
-                key={option}
-                option={option}
-                text={optionText}
-                selected={selected}
-                onPress={() => selectAnswer(currentQuestion.id, option)}
-                colors={colors}
-                spacing={spacing}
-              />
-            );
-          })}
-        </ScrollView>
-
-        {/* FOOTER */}
-        <TryoutFooter
-          colors={colors}
-          spacing={spacing}
-          currentIndex={currentIndex}
+        {/* ── MODAL PALETTE ── */}
+        <QuestionPaletteModal
+          visible={paletteVisible}
+          onClose={() => setPaletteVisible(false)}
           questions={questions}
-          currentAnswer={currentAnswer}
-          currentQuestion={currentQuestion}
-          toggleRagu={toggleRagu}
-          setCurrentIndex={setCurrentIndex}
-          onSubmitPress={() => setSubmitVisible(true)}
+          answers={answers}
+          currentIndex={currentIndex}
+          onSelect={index => setCurrentIndex(index)}
         />
-      </View>
 
-      {/* ── MODAL PALETTE ── */}
-      <QuestionPaletteModal
-        visible={paletteVisible}
-        onClose={() => setPaletteVisible(false)}
-        questions={questions}
-        answers={answers}
-        currentIndex={currentIndex}
-        onSelect={index => setCurrentIndex(index)}
-      />
+        {/* ── MODAL SUBMIT ── */}
+        <SubmitModal
+          visible={submitVisible}
+          onCancel={() => !submitting && setSubmitVisible(false)}
+          onConfirm={handleSubmit}
+          stats={submitStats}
+          submitting={submitting}
+        />
 
-      {/* ── MODAL SUBMIT ── */}
-      <SubmitModal
-        visible={submitVisible}
-        onCancel={() => !submitting && setSubmitVisible(false)}
-        onConfirm={handleSubmit}
-        stats={submitStats}
-        submitting={submitting}
-      />
-    </AppLayout>
+        {Platform.OS === 'ios' && isRecording && <RecordingOverlay />}
+      </AppLayout>
+    </SafeAreaView>
   );
 }
 

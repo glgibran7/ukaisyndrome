@@ -522,7 +522,26 @@ export default function TryoutScreen({ navigation, route }) {
                     fontWeight: '600',
                   }}
                 >
-                  {item.max_attempt}x
+                  Max: {item.max_attempt}x
+                </Text>
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    marginHorizontal: 5,
+                    fontSize: 10,
+                  }}
+                >
+                  •
+                </Text>
+
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: '600',
+                  }}
+                >
+                  Sisa: {item.remaining_attempt}x
                 </Text>
               </View>
 
