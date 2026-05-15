@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getMentors, getModules, getNewsAds } from '../../api/cdn/cdn.api';
 
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -407,27 +408,23 @@ export default function HomeScreen({ navigation }) {
 
   const fetchData = async () => {
     try {
-      const [mRes, modRes, adsRes] = await Promise.all([
-        fetch(
-          'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/mentors.json',
-        ),
+      setLoading(true);
 
-        fetch(
-          'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/modules.json',
-        ),
-
-        fetch(
-          'https://raw.githubusercontent.com/glgibran7/ukai-assets/main/ads.json',
-        ),
+      const [mentorRes, moduleRes, newsRes] = await Promise.all([
+        getMentors(),
+        getModules(),
+        getNewsAds(),
       ]);
 
-      setMentors(await mRes.json());
-      setModules(await modRes.json());
+      // mentor
+      setMentors(mentorRes?.data || []);
 
-      const adsData = await adsRes.json();
+      // modul
+      setModules(moduleRes?.data || []);
 
-      if (adsData?.length) {
-        setAds(adsData);
+      // ads/news
+      if (newsRes?.data) {
+        setAds([newsRes.data]);
 
         if (!hasShownAdsThisSession) {
           hasShownAdsThisSession = true;
@@ -438,7 +435,7 @@ export default function HomeScreen({ navigation }) {
         }
       }
     } catch (e) {
-      console.log(e);
+      console.log('FETCH HOME CDN ERROR:', e);
     } finally {
       setLoading(false);
 
