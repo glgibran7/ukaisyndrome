@@ -24,6 +24,7 @@ import AppLayout from '../../components/AppLayout';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useToast } from '../../context/ToastProvider';
 import { getTryoutReport } from '../../api/tryout/attempt.api';
+import QuestionPaletteModal from '../../components/tryout/QuestionPaletteModal';
 
 /* ─────────────────────────────────────────────
    CONSTANTS
@@ -572,80 +573,23 @@ export default function TryoutHasilDetailScreen({ route, navigation }) {
       </View>
 
       {/* ── MODAL PALETTE ── */}
-      <Modal
+      <QuestionPaletteModal
         visible={paletteVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPaletteVisible(false)}
-      >
-        <View style={[styles.paletteBackdrop, { padding: spacing.md }]}>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => setPaletteVisible(false)}
-            style={StyleSheet.absoluteFill}
-          />
-
-          <View
-            style={[styles.paletteCard, { backgroundColor: colors.background }]}
-          >
-            <View style={{ marginBottom: spacing.md }}>
-              <Text style={[styles.paletteTitle, { color: colors.text }]}>
-                Navigasi Soal
-              </Text>
-              <View style={styles.paletteLegend}>
-                <LegendDot color="#22C55E" label="Benar" />
-                <LegendDot color="#EF4444" label="Salah" />
-                <LegendDot color="#9CA3AF" label="Kosong" />
-                <LegendDot color="#F59E0B" label="Ragu" />
-              </View>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.paletteGrid}>
-                {questions.map((item, index) => {
-                  const active = index === currentIndex;
-                  const bg = active
-                    ? colors.primary
-                    : item.status === 'benar'
-                    ? '#22C55E'
-                    : item.status === 'salah'
-                    ? '#EF4444'
-                    : '#9CA3AF';
-
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      activeOpacity={0.9}
-                      onPress={() => {
-                        setCurrentIndex(index);
-                        setPaletteVisible(false);
-                      }}
-                      style={[
-                        styles.paletteCell,
-                        {
-                          backgroundColor: bg,
-                          borderColor: active ? colors.primary : 'transparent',
-                        },
-                      ]}
-                    >
-                      <Text style={styles.paletteCellText}>{index + 1}</Text>
-                      {item.is_ragu && <View style={styles.raguDot} />}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setPaletteVisible(false)}
-              style={[styles.paletteClose, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.paletteCloseText}>Tutup</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setPaletteVisible(false)}
+        questions={questions}
+        currentIndex={currentIndex}
+        mode="pembahasan"
+        onSelect={index => setCurrentIndex(index)}
+        answers={Object.fromEntries(
+          questions.map(item => [
+            item.id,
+            {
+              answer: item.user_answer,
+              ragu: item.is_ragu,
+            },
+          ]),
+        )}
+      />
     </AppLayout>
   );
 }

@@ -13,6 +13,7 @@ import {
   CircleAlert,
   Trophy,
   ChevronRight,
+  Info,
 } from 'lucide-react-native';
 
 import AppLayout from '../../components/AppLayout';
@@ -226,6 +227,11 @@ export default function TryoutDetailScreen({ route, navigation }) {
               icon={<Trophy size={18} color={colors.primary} />}
               label="Maksimal Percobaan"
               value={`${tryout?.max_attempt}x Percobaan`}
+            />
+            <InfoItem
+              icon={<Info size={18} color={colors.primary} />}
+              label="Sisa Percobaan"
+              value={`${tryout?.remaining_attempt}x Percobaan`}
             />
           </AppCard>
 

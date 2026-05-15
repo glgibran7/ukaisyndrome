@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 import {
   Modal,
@@ -10,17 +10,30 @@ import {
   ScrollView,
 } from 'react-native';
 
-import { X, CheckCircle2, Flag } from 'lucide-react-native';
+import {
+  X,
+  CheckCircle2,
+  Flag,
+  XCircle,
+  MinusCircle,
+} from 'lucide-react-native';
 
 import { useTheme } from '../../theme/ThemeProvider';
 
 export default function QuestionPaletteModal({
   visible,
   onClose,
-  questions,
-  answers,
-  currentIndex,
+  questions = [],
+  answers = {},
+  currentIndex = 0,
   onSelect,
+
+  // mode
+  mode = 'tryout', // tryout | pembahasan
+
+  // optional custom title
+  title = 'Navigasi Soal',
+  subtitle = 'Pilih soal yang ingin dibuka',
 }) {
   const { colors } = useTheme();
 
@@ -49,37 +62,158 @@ export default function QuestionPaletteModal({
     }
   }, [visible]);
 
+  const legends = useMemo(() => {
+    if (mode === 'pembahasan') {
+      return [
+        {
+          color: '#22C55E',
+          label: 'Benar',
+        },
+        {
+          color: '#EF4444',
+          label: 'Salah',
+        },
+        {
+          color: '#9CA3AF',
+          label: 'Kosong',
+        },
+        {
+          color: '#F59E0B',
+          label: 'Ragu',
+        },
+        {
+          outlined: true,
+          borderColor: colors.primary,
+          label: 'Aktif',
+        },
+      ];
+    }
+
+    return [
+      {
+        color: '#22C55E',
+        label: 'Dijawab',
+      },
+      {
+        color: '#F59E0B',
+        label: 'Ragu',
+      },
+      {
+        outlined: true,
+        borderColor: colors.primary,
+        label: 'Aktif',
+      },
+    ];
+  }, [mode, colors.primary]);
+
   const renderQuestionButton = (item, index) => {
     const ans = answers?.[item.id];
 
-    const answered = !!ans?.answer;
-    const isRagu = ans?.ragu;
     const active = index === currentIndex;
 
     let bg = colors.card;
     let borderColor = colors.border;
     let textColor = colors.text;
 
-    // answered
-    if (answered) {
-      bg = '#22C55E';
-      textColor = '#fff';
+    let icon = null;
+
+    /* ─────────────────────────────
+       MODE TRYOUT
+    ───────────────────────────── */
+    if (mode === 'tryout') {
+      const answered = !!ans?.answer;
+      const isRagu = ans?.ragu;
+
+      if (answered) {
+        bg = '#22C55E';
+        textColor = '#fff';
+
+        icon = (
+          <View style={styles.iconBadge}>
+            <CheckCircle2 size={10} color="#fff" strokeWidth={3} />
+          </View>
+        );
+      }
+
+      if (isRagu) {
+        bg = '#F59E0B';
+        textColor = '#fff';
+
+        icon = (
+          <View
+            style={[
+              styles.iconBadge,
+              {
+                backgroundColor: '#fff',
+              },
+            ]}
+          >
+            <Flag size={9} color="#F59E0B" strokeWidth={3} />
+          </View>
+        );
+      }
     }
 
-    // ragu override answered
-    if (isRagu) {
-      bg = '#F59E0B';
-      textColor = '#fff';
+    /* ─────────────────────────────
+       MODE PEMBAHASAN
+    ───────────────────────────── */
+    if (mode === 'pembahasan') {
+      const status = item?.status;
+      const isRagu = item?.is_ragu;
+
+      if (status === 'benar') {
+        bg = '#22C55E';
+        textColor = '#fff';
+
+        icon = (
+          <View style={styles.iconBadge}>
+            <CheckCircle2 size={10} color="#fff" strokeWidth={3} />
+          </View>
+        );
+      } else if (status === 'salah') {
+        bg = '#EF4444';
+        textColor = '#fff';
+
+        icon = (
+          <View style={styles.iconBadge}>
+            <XCircle size={10} color="#fff" strokeWidth={3} />
+          </View>
+        );
+      } else {
+        bg = '#9CA3AF';
+        textColor = '#fff';
+
+        icon = (
+          <View style={styles.iconBadge}>
+            <MinusCircle size={10} color="#fff" strokeWidth={3} />
+          </View>
+        );
+      }
+
+      if (isRagu) {
+        icon = (
+          <View
+            style={[
+              styles.iconBadge,
+              {
+                backgroundColor: '#fff',
+              },
+            ]}
+          >
+            <Flag size={9} color="#F59E0B" strokeWidth={3} />
+          </View>
+        );
+      }
     }
 
-    // active -> beda warna border saja
+    // active
     if (active) {
       borderColor = colors.primary;
     }
 
     return (
       <TouchableOpacity
-        key={item.id}
+        key={item.id ?? index}
         activeOpacity={0.88}
         onPress={() => {
           onSelect(index);
@@ -93,7 +227,6 @@ export default function QuestionPaletteModal({
           },
         ]}
       >
-        {/* nomor */}
         <Text
           style={[
             styles.cellText,
@@ -105,26 +238,7 @@ export default function QuestionPaletteModal({
           {index + 1}
         </Text>
 
-        {/* answered icon */}
-        {answered && !isRagu && (
-          <View style={styles.iconBadge}>
-            <CheckCircle2 size={10} color="#fff" strokeWidth={3} />
-          </View>
-        )}
-
-        {/* ragu icon */}
-        {isRagu && (
-          <View
-            style={[
-              styles.iconBadge,
-              {
-                backgroundColor: '#fff',
-              },
-            ]}
-          >
-            <Flag size={9} color="#F59E0B" strokeWidth={3} />
-          </View>
-        )}
+        {icon}
       </TouchableOpacity>
     );
   };
@@ -144,7 +258,6 @@ export default function QuestionPaletteModal({
           },
         ]}
       >
-        {/* backdrop */}
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
@@ -164,7 +277,7 @@ export default function QuestionPaletteModal({
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.title, { color: colors.text }]}>
-                Navigasi Soal
+                {title}
               </Text>
 
               <Text
@@ -175,24 +288,24 @@ export default function QuestionPaletteModal({
                   },
                 ]}
               >
-                Pilih soal yang ingin dibuka
+                {subtitle}
               </Text>
 
               {/* LEGEND */}
               <View style={styles.legendWrap}>
-                <LegendItem color="#22C55E" label="Dijawab" />
-
-                <LegendItem color="#F59E0B" label="Ragu" />
-
-                <LegendItem
-                  outlined
-                  borderColor={colors.primary}
-                  label="Aktif"
-                />
+                {legends.map((item, idx) => (
+                  <LegendItem
+                    key={idx}
+                    color={item.color}
+                    label={item.label}
+                    outlined={item.outlined}
+                    borderColor={item.borderColor}
+                  />
+                ))}
               </View>
             </View>
 
-            {/* close */}
+            {/* CLOSE */}
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={onClose}
@@ -327,14 +440,12 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
 
-  // grid fleksibel
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
 
-  // tombol soal
   cell: {
     width: 48,
     height: 48,
@@ -343,7 +454,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     borderWidth: 1.5,
-    overflow: 'visible',
   },
 
   cellText: {

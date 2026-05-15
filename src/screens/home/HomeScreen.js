@@ -23,6 +23,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MENTOR_CARD_WIDTH = 128;
 const MODULE_CARD_WIDTH = 128;
 
+// GLOBAL SESSION FLAG
+let hasShownAdsThisSession = false;
+
 // ─── Skeleton shimmer block ───────────────────────────────────────────────────
 function SkeletonBox({ width, height, radius = 10, style }) {
   const opacity = useRef(new Animated.Value(0.35)).current;
@@ -378,21 +381,33 @@ export default function HomeScreen({ navigation }) {
       setModules(await modRes.json());
 
       const adsData = await adsRes.json();
+
       if (adsData?.length) {
         setAds(adsData);
-        // Tampilkan popup setelah data siap
-        setTimeout(() => setAdsVisible(true), 400);
+
+        /**
+         * hanya tampil sekali selama app masih hidup
+         */
+        if (!hasShownAdsThisSession) {
+          hasShownAdsThisSession = true;
+
+          setTimeout(() => {
+            setAdsVisible(true);
+          }, 400);
+        }
       }
     } catch (e) {
       console.log(e);
     } finally {
       setLoading(false);
+
       Animated.parallel([
         Animated.timing(pageOpacity, {
           toValue: 1,
           duration: 450,
           useNativeDriver: true,
         }),
+
         Animated.timing(pageTranslateY, {
           toValue: 0,
           duration: 400,
