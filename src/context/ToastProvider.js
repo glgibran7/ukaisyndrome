@@ -181,7 +181,7 @@ export function ToastProvider({ children }) {
                 borderRadius: 18,
                 backgroundColor: 'rgba(255,255,255,0.92)',
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.7)',
+                borderColor: '#d38c0e',
                 shadowColor: '#000',
                 shadowOpacity: 0.08,
                 shadowRadius: 16,

@@ -425,8 +425,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 lineHeight: 18,
               }}
             >
-              © {new Date().getFullYear()} Outlook Project.{'\n'}
-              All rights reserved.
+              © {new Date().getFullYear()} Outlook Project. All rights reserved.
             </Text>
           </View>
         </KeyboardAwareScrollView>
