@@ -1,4 +1,4 @@
-package com.ukaisyndrome;
+package com.ukaisyndrome.app;
 
 import android.view.WindowManager;
 import com.facebook.react.bridge.ReactApplicationContext;
